@@ -13,8 +13,8 @@ import pymysql
 
 path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData/res'
 os.chdir(path)
-rebal_result = pd.read_excel('basket_190514.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
-result_190507 = pd.read_excel('basket_190507_sector.xlsx')[['date','code', 'weight']] 
+rebal_result = pd.read_excel('basket_190515.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+#rebal_result_old = pd.read_excel('basket_190507_sector.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드3
 
 dollar = 1000  # Dollar invested
 
@@ -51,14 +51,12 @@ def get_index_price(stockCodes, date_start, date_end):
 
 portPrice, tradeCost_history = backtest.get_backtest_history(dollar, rebal_result, equal_weight = False, roundup = False) # 백테스트 결과 출력 
 portPrice_noTC, tradeCost_history_noTC = backtest.get_backtest_history(dollar, rebal_result, equal_weight = False, roundup = False, tradeCost = 0.0) # 백테스트 결과 출력 
+#portPrice_old, tc_history_old =  backtest.get_backtest_history(dollar, rebal_result_old, equal_weight = False, roundup = False)
+#portPrice_noTC_old, tc_history_old =  backtest.get_backtest_history(dollar, rebal_result_old, equal_weight = False, roundup = False, tradeCost = 0.0)
 
 portPrice.columns = ['port']
+portPrice_noTC.columns = ['port_noTC']
 bm = get_index_price(['I.001','I.101'], portPrice.index[0], portPrice.index[-1])/100
-data = pd.concat([portPrice, bm], axis= 1)
+data = pd.concat([portPrice, portPrice_noTC, bm], axis= 1)
+data.to_excel('result_190515_v4.xlsx')
 
-portPrice_old, tradeCost_history_old = backtest.get_backtest_history(dollar, result_190507, equal_weight = False, roundup = False) # 백테스트 결과 출력 
-portPrice_old_noTC, tradeCost_history_old = backtest.get_backtest_history(dollar, result_190507, equal_weight = False, roundup = False, tradeCost = 0.0) # 백테스트 결과 출력 
-
-
-
-portPrice_old_noTC.to_excel('old_noTC.xlsx')
