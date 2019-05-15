@@ -9,6 +9,8 @@ Created on Mon May 13 22:54:06 2019
 import sqlite3
 from sqlite3 import Error
 
+path_mac = '/Users/Woojin/Documents/Github/Project_Q/'
+path_win = 'C:/Woojin/###. Git/Project_Q/Value and Earnings Momentum'
 # 1. Create Database
 def create_connection(db_file):
     """ create a database connection to a SQLite database """
@@ -20,4 +22,5 @@ def create_connection(db_file):
     finally:
         conn.close()
  
-create_connection('/Users/Woojin/Documents/Github/Project_Q/Project_Q.db')
+create_connection('C:/Woojin/###. Git/Project_Q/Value and Earnings Momentum/rdata.db')
+                  
