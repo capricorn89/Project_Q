@@ -261,9 +261,13 @@ rebalDataFinal_k200 = rebalData_k200.unstack(level=0).reset_index().sort_values(
 
 rebalDataFinal.columns = ['date', 'code']
 rebalDataFinal_k200.columns = ['date', 'code']
+rebalDataFinal.to_excel('firms_190515.xlsx', index = False)    
+rebalDataFinal_k200.to_excel('firms_190515_k200.xlsx', index = False)  
 
+
+  
 ##############################################################################
-# BackTest II
+# 비중 부여
 ##############################################################################    
 '''
 K200 비중을 받아서 당시 비중에 OW / UW 하는 방식으로 비중 부여
@@ -274,25 +278,33 @@ rebalDataFinal = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData
 rebalDataFinal_k200 = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res/firms_190515_k200.xlsx')
 
 from pandas.tseries.offsets import MonthEnd
-k200Weight = pd.read_excel('kospi200_hist.xlsx')
-k200Weight = k200Weight.iloc[1:,:]
-k200Weight = k200Weight[['Y/M', 'Code', 'Weight(BM)']]
-k200Weight['Y/M'] = pd.to_datetime(k200Weight['Y/M'], format="%Y/%m") + MonthEnd(0) # Convert to Month End
-k200Weight.columns = ['date', 'code', 'k200_weight']
+from copy import deepcopy
+
+k200 = pd.read_excel('kospi200_hist.xlsx')
+k200 = k200.iloc[1:,:]
+k200 = k200[['Y/M', 'Code', 'Weight(BM)']]
+k200['Y/M'] = pd.to_datetime(k200['Y/M'], format="%Y/%m") + MonthEnd(0) # Convert to Month End
+k200.columns = ['date', 'code', 'k200_weight']
 
 risk_1.index = risk_1.index + MonthEnd(0)
-   
-for idx in k200Weight.index:
- 
-    notRisk_1 = risk_1.loc[k200Weight.loc[idx, 'date'], :]
+risk_2.index = risk_2.index + MonthEnd(0)  
+for idx in k200.index:
+    notRisk_1 = risk_1.loc[k200.loc[idx, 'date'], :]
     notRisk_1 = notRisk_1[notRisk_1 == 0].index.values
+    notRisk_2 = risk_2.loc[k200.loc[idx, 'date'], :]
+    notRisk_2 = notRisk_2[notRisk_2 == 0].index.values
     
-    if k200Weight.loc[idx, 'code'] in notRisk_1:
+    # 거래정지 & 관리종목은 비중에서 삭제
+    if (k200.loc[idx, 'code'] in notRisk_1) & (k200.loc[idx, 'code'] in notRisk_2):
         pass
     else:
-        k200Weight.loc[idx, 'k200_weight'] = 0
+        print(idx)
+        k200.loc[idx, 'k200_weight'] = 0
         
-k200Weight['k200_weight'] = k200Weight['k200_weight'] / k200Weight.groupby('date')['k200_weight'].transform('sum')
+k200['k200_weight'] = k200['k200_weight'] / k200.groupby('date')['k200_weight'].transform('sum') # 지수 비중 노멀라이즈
+k200 = k200[k200['k200_weight'] != 0] # 거래정지 & 관리종목 데이터 삭제
+k200 = k200.reset_index().iloc[:,1:]
+
 
 
 def mergeK200Weight(rebalData, k200WeightData, sectorData, sectorOn = True):
@@ -303,9 +315,9 @@ def mergeK200Weight(rebalData, k200WeightData, sectorData, sectorOn = True):
     rebalData['weight'] = 1 # 추출된 종목들에는 비중에 1 부여 --> 나중에 k200 비중보다 더 높은 비중을 줘야하기 떄문
     rebalData['date'] = rebalData['date'] + MonthEnd(0)# 월 마지막날로 날짜 통일
     # K200 비중 데이터와 병합
-    rebalData = pd.merge(k200Weight, rebalData, how='outer', left_on = ['date', 'code'], right_on = ['date', 'code'])
-    rebalData['newWeight'] = np.nan
+    rebalData = pd.merge(k200WeightData, rebalData, how='outer', left_on = ['date', 'code'], right_on = ['date', 'code'])
 
+    rebalData['newWeight'] = np.nan
     for idx in rebalData.index:
         if pd.isna(rebalData.loc[idx, 'weight']):
             rebalData.loc[idx, 'newWeight'] = rebalData.loc[idx, 'k200_weight']
@@ -331,23 +343,99 @@ def mergeK200Weight(rebalData, k200WeightData, sectorData, sectorOn = True):
     return rebalData
 
 
+# KOSPI내 추출종목 중 KOSPI200을 대체하지 않고 그냥 추가
+    
+def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = True, replacement = True):
 
-basket_190515 = mergeK200Weight(rebalDataFinal_k200, k200Weight, sector, sectorOn=True)
+    marketData.index = marketData.index + MonthEnd(0)
+    sectorData.index = sectorData.index + MonthEnd(0)
+        
+    y = deepcopy(rebalData)
+    
+    y['market'] = np.NaN
+    y['sector'] = np.NaN
+    y['date'] = y['date'] + MonthEnd(0)
+    
+    for idx in y.index:
+        y.loc[idx, 'market'] = marketData.loc[y.loc[idx, 'date'], y.loc[idx,'code']]       
+
+    y = pd.merge(k200WeightData, y, how='outer', left_on = ['date', 'code'], right_on = ['date', 'code'], indicator=True)
+    y = y[y.market != 'KOSDAQ']   
+    y = y[(y.date >= '2006-12-31') & (y.date < '2019-04-01') ]  # 이전 데이터는 K200 비중이 없으므로 제외
+ 
+
+    if replacement == False:
+        y['newWeight'] = np.nan        
+        for idx in y.index:
+            if y.loc[idx, '_merge'] == 'right_only':   # 종목 선정된 KOSPI 애들 중에 K200이 아니었던 애들
+                y.loc[idx, 'newWeight'] = 0.01
+            elif y.loc[idx, '_merge'] == 'left_only':  # 기존 K200 중 종목선정이 되지 않았던 애들
+                y.loc[idx, 'newWeight'] = y.loc[idx, 'k200_weight']
+            elif y.loc[idx, '_merge'] == 'both':
+                y.loc[idx, 'newWeight'] = y.loc[idx, 'k200_weight'] + 0.01  # K200 중에서 종목선정이 된 애들
+        if sectorOn == False: 
+            # Normalize (리밸런싱 일자 기준)
+            y.newWeight = y.newWeight / y.groupby('date')['newWeight'].transform('sum')
+            y = y[['date', 'code', 'newWeight']]
+            y.columns = ['date', 'code', 'weight']
+        else:
+            for idx in y.index:
+                y.loc[idx, 'sector'] = sectorData.loc[y.loc[idx, 'date'], y.loc[idx,'code']]
+            y['sector_weight'] = y.groupby(['date', 'sector'])['k200_weight'].transform('sum') # 기존 섹터별 비중
+            y['newWeight'] = y['newWeight'] / y.groupby(['date', 'sector'])['newWeight'].transform('sum') * y['sector_weight']
+            y = y[['date', 'code', 'newWeight']]
+            y.columns = ['date', 'code', 'weight']         
+       
+
+    else:
+        
+        y['newWeight'] = np.nan
+        dd = {}
+        for date, g in y.groupby('date'):
+            # 신규 편입된 비 K200 종목의 숫자 확인
+            nonk200 = g[g._merge == 'right_only']
+            nonk200_idx = nonk200.index.values
+            nonk200_size = len(nonk200_idx)                    
+            # 그 숫자만큼 종목선정이 되지 않았던 애들 중에서 하위권 
+            k200_old = g[g._merge == 'left_only']
+            k200_out_idx = k200_old.nsmallest(nonk200_size, columns = 'k200_weight').index.values                             
+            
+            for idx in g.index:
+                if idx in nonk200_idx:
+                    g.loc[idx, 'newWeight'] = 0.01
+                elif idx in k200_out_idx:
+                    g.loc[idx, 'newWeight'] = 0
+                else:
+                    g.loc[idx, 'newWeight'] = g.loc[idx, 'k200_weight']
+
+            g = g[g.newWeight != 0]
+            dd[date] = g
+        
+        y = pd.concat(dd).reset_index()[['date', 'code', 'k200_weight', 'sector', 'newWeight']]
+        
+        if sectorOn == False: 
+            # Normalize (리밸런싱 일자 기준)
+            y.newWeight = y.newWeight / y.groupby('date')['newWeight'].transform('sum')
+            y = y[['date', 'code', 'newWeight']]
+            y.columns = ['date', 'code', 'weight']
+        else:
+            for idx in y.index:
+                y.loc[idx, 'sector'] = sectorData.loc[y.loc[idx, 'date'], y.loc[idx,'code']]
+            y['sector_weight'] = y.groupby(['date', 'sector'])['k200_weight'].transform('sum') # 기존 섹터별 비중
+            y['newWeight'] = y['newWeight'] / y.groupby(['date', 'sector'])['newWeight'].transform('sum') * y['sector_weight']            
+            y = y[['date', 'code', 'newWeight']]
+            y.columns = ['date', 'code', 'weight']   
+                
+    return y
+
+
+df1 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=False, sectorOn = False)     # 기존 바스켓에 더하는 경우
+df2 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sectorOn = False)  # 기존 바스켓에 있는 하위종목을 교체
+df3 = addKOSPIfirms(rebalDataFinal_k200, k200, market, sector, replacement=False, sectorOn = False)  #K200 ONly
 
 os.chdir('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res')
-rebalDataFinal.to_excel('firms_190515.xlsx', index = False)    
-rebalDataFinal_k200.to_excel('firms_190515_k200.xlsx', index = False)    
-basket_190515.to_excel('basket_190515.xlsx', index = False)
-    
-
-
-
-basket_190515[basket_190515.date == '2018-02-28'].sum()
-
-
-
-
-
-
-
-
+writer = pd.ExcelWriter('basket_190516.xlsx', engine = 'xlsxwriter')        
+df1.to_excel(writer, sheet_name = 'addKOSPI')
+df2.to_excel(writer, sheet_name = 'replacedwithKOSPI')
+df3.to_excel(writer, sheet_name = 'onlyK200')
+writer.save()
