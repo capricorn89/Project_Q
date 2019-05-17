@@ -4,7 +4,6 @@ Quantitative Ideas
 # Contents 
 ## As is:
 
-### Basics
 #### Lecture 
 1. Basic Pandas
 
