@@ -10,16 +10,20 @@ import pandas as pd
 import numpy as np
 import datetime
 import pymysql
+os.chdir('C:/Woojin/###. Git/Project_Q/Value and Earnings Momentum')    
+import backtest_pipeline as backtest
+
 
 path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData/res'
 os.chdir(path)
-rebal_result = pd.read_excel('basket_190515.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
-#rebal_result_old = pd.read_excel('basket_190507_sector.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드3
+
+rebal_1 = pd.read_excel('basket_190517.xlsx', sheet_name = 'addKOSPI')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+rebal_2 = pd.read_excel('basket_190517.xlsx', sheet_name = 'replacedwithKOSPI')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+rebal_3 = pd.read_excel('basket_190517.xlsx', sheet_name = 'onlyK200')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+rebal_4 = pd.read_excel('basket_190517.xlsx', sheet_name = 'addKOSDAQ')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
 
 dollar = 1000  # Dollar invested
 
-os.chdir('C:/Woojin/1. Codes')    
-import backtest_pipeline as backtest
 
 def get_index_price(stockCodes, date_start, date_end):
     '''
@@ -49,14 +53,30 @@ def get_index_price(stockCodes, date_start, date_end):
     return data
 
 
-portPrice, tradeCost_history = backtest.get_backtest_history(dollar, rebal_result, equal_weight = False, roundup = False) # 백테스트 결과 출력 
-portPrice_noTC, tradeCost_history_noTC = backtest.get_backtest_history(dollar, rebal_result, equal_weight = False, roundup = False, tradeCost = 0.0) # 백테스트 결과 출력 
-#portPrice_old, tc_history_old =  backtest.get_backtest_history(dollar, rebal_result_old, equal_weight = False, roundup = False)
-#portPrice_noTC_old, tc_history_old =  backtest.get_backtest_history(dollar, rebal_result_old, equal_weight = False, roundup = False, tradeCost = 0.0)
+port_1, _ = backtest.get_backtest_history(dollar, rebal_1, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_2, _ = backtest.get_backtest_history(dollar, rebal_2, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_3, _ = backtest.get_backtest_history(dollar, rebal_3, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_4, _ = backtest.get_backtest_history(dollar, rebal_4, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
 
-portPrice.columns = ['port']
-portPrice_noTC.columns = ['port_noTC']
-bm = get_index_price(['I.001','I.101'], portPrice.index[0], portPrice.index[-1])/100
-data = pd.concat([portPrice, portPrice_noTC, bm], axis= 1)
-data.to_excel('result_190515_v4.xlsx')
+port_1.columns = ['port_addKOSPI']
+port_2.columns = ['port_repWithKOSPI']
+port_3.columns = ['port_k200Only']
+port_4.columns = ['port_addKOSDAQ']
+bm = get_index_price(['I.001','I.101'], port_1.index[0], port_1.index[-1])/100
 
+data = pd.concat([port_1, port_2, port_3, port_4, bm], axis= 1)
+data.to_excel('result_190517_70bp.xlsx')
+
+
+rebal_5 = pd.read_excel('basket_opt_190517.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+port_5, _ = backtest.get_backtest_history(dollar, rebal_5, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_5.to_excel('result_190517_70bp_opt.xlsx')
+
+
+rebal_6 = pd.read_excel('basket_opt_190517_100bp.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+port_6, _ = backtest.get_backtest_history(dollar, rebal_6, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_6.to_excel('result_190517_70bp_opt_100bp.xlsx')
+
+rebal_7 = pd.read_excel('basket_opt_190517_50bp.xlsx')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
+port_7, _ = backtest.get_backtest_history(dollar, rebal_7, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_7.to_excel('result_190517_70bp_opt_50bp.xlsx')
