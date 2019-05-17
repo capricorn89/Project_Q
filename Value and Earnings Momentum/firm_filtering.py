@@ -261,8 +261,11 @@ rebalDataFinal_k200 = rebalData_k200.unstack(level=0).reset_index().sort_values(
 
 rebalDataFinal.columns = ['date', 'code']
 rebalDataFinal_k200.columns = ['date', 'code']
-rebalDataFinal.to_excel('firms_190515.xlsx', index = False)    
-rebalDataFinal_k200.to_excel('firms_190515_k200.xlsx', index = False)  
+
+newPath = path + '/res'
+os.chdir(newPath)
+rebalDataFinal.to_excel('firms_190517.xlsx', index = False)    
+rebalDataFinal_k200.to_excel('firms_190517_k200.xlsx', index = False)  
 
 
   
@@ -274,11 +277,12 @@ K200 비중을 받아서 당시 비중에 OW / UW 하는 방식으로 비중 부
 K200 비중 받아오되, 거래정지 관리종목 외감인 종목은 제외하고 노말라이즈
 '''
 
-rebalDataFinal = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res/firms_190515.xlsx')
-rebalDataFinal_k200 = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res/firms_190515_k200.xlsx')
+#rebalDataFinal = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res/firms_190517.xlsx')
+#rebalDataFinal_k200 = pd.read_excel('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res/firms_190517_k200.xlsx')
 
 from pandas.tseries.offsets import MonthEnd
 from copy import deepcopy
+os.chdir(path)
 
 k200 = pd.read_excel('kospi200_hist.xlsx')
 k200 = k200.iloc[1:,:]
@@ -345,7 +349,7 @@ def mergeK200Weight(rebalData, k200WeightData, sectorData, sectorOn = True):
 
 # KOSPI내 추출종목 중 KOSPI200을 대체하지 않고 그냥 추가
     
-def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = True, replacement = True):
+def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = True, replacement = True, addKQ = True):
 
     marketData.index = marketData.index + MonthEnd(0)
     sectorData.index = sectorData.index + MonthEnd(0)
@@ -354,13 +358,16 @@ def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = 
     
     y['market'] = np.NaN
     y['sector'] = np.NaN
-    y['date'] = y['date'] + MonthEnd(0)
-    
-    for idx in y.index:
-        y.loc[idx, 'market'] = marketData.loc[y.loc[idx, 'date'], y.loc[idx,'code']]       
+    y['date'] = y['date'] + MonthEnd(0)    
+    y['market'] = [marketData.loc[y.loc[idx, 'date'], y.loc[idx,'code']] for idx in y.index]       
 
     y = pd.merge(k200WeightData, y, how='outer', left_on = ['date', 'code'], right_on = ['date', 'code'], indicator=True)
-    y = y[y.market != 'KOSDAQ']   
+    
+    if addKQ == True:
+        y = y
+    else:
+        y = y[y.market != 'KOSDAQ']   
+        
     y = y[(y.date >= '2006-12-31') & (y.date < '2019-04-01') ]  # 이전 데이터는 K200 비중이 없으므로 제외
  
 
@@ -392,23 +399,20 @@ def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = 
         y['newWeight'] = np.nan
         dd = {}
         for date, g in y.groupby('date'):
+            #print(date)
             # 신규 편입된 비 K200 종목의 숫자 확인
-            nonk200 = g[g._merge == 'right_only']
-            nonk200_idx = nonk200.index.values
-            nonk200_size = len(nonk200_idx)                    
-            # 그 숫자만큼 종목선정이 되지 않았던 애들 중에서 하위권 
-            k200_old = g[g._merge == 'left_only']
-            k200_out_idx = k200_old.nsmallest(nonk200_size, columns = 'k200_weight').index.values                             
+            numOut = len(g[g._merge == 'right_only'])
+            # 기존 K200에서 제외되는 종목의 시가총액 하한선 설정
+            if numOut == 0:
+                mktcap_threshold = 0
+            else:
+                mktcap_threshold = g[g._merge == 'left_only'].nsmallest(numOut, columns = 'k200_weight')['k200_weight'].max()
             
-            for idx in g.index:
-                if idx in nonk200_idx:
-                    g.loc[idx, 'newWeight'] = 0.01
-                elif idx in k200_out_idx:
-                    g.loc[idx, 'newWeight'] = 0
-                else:
-                    g.loc[idx, 'newWeight'] = g.loc[idx, 'k200_weight']
-
-            g = g[g.newWeight != 0]
+            g['newWeight'] = np.where(g['_merge'] == 'right_only', 0.01, 
+                                      np.where(g['_merge'] == 'both', g['k200_weight'] + 0.01,
+                                               np.where((g['_merge'] == 'left_only') & (g['k200_weight'] > mktcap_threshold),
+                                                        g['k200_weight'], np.nan)))
+            g = g[~pd.isna(g['newWeight'])]
             dd[date] = g
         
         y = pd.concat(dd).reset_index()[['date', 'code', 'k200_weight', 'sector', 'newWeight']]
@@ -429,13 +433,15 @@ def addKOSPIfirms(rebalData, k200WeightData, marketData, sectorData, sectorOn = 
     return y
 
 
-df1 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=False, sectorOn = False)     # 기존 바스켓에 더하는 경우
-df2 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sectorOn = False)  # 기존 바스켓에 있는 하위종목을 교체
-df3 = addKOSPIfirms(rebalDataFinal_k200, k200, market, sector, replacement=False, sectorOn = False)  #K200 ONly
+df1 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=False, sectorOn = True, addKQ = False)     # 기존 바스켓에 더하는 경우
+df2 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sectorOn = True, addKQ = False)  # 기존 바스켓에 있는 하위종목을 코스피로 교체
+df3 = addKOSPIfirms(rebalDataFinal_k200, k200, market, sector, replacement=False, sectorOn = True, addKQ = False)  #K200 ONly
+df4 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sectorOn = True, addKQ = True)  # 기존 바스켓 하위 종목을 코스피, 코스닥으로 교체 
 
-os.chdir('C:/Woojin/##. To-do/value_earnMom 전략/rawData/res')
-writer = pd.ExcelWriter('basket_190516.xlsx', engine = 'xlsxwriter')        
-df1.to_excel(writer, sheet_name = 'addKOSPI')
-df2.to_excel(writer, sheet_name = 'replacedwithKOSPI')
-df3.to_excel(writer, sheet_name = 'onlyK200')
+os.chdir(newPath)
+writer = pd.ExcelWriter('basket_190517_70bp.xlsx', engine = 'xlsxwriter')        
+df1.to_excel(writer, sheet_name = 'addKOSPI', index = False)
+df2.to_excel(writer, sheet_name = 'replacedwithKOSPI', index = False)
+df3.to_excel(writer, sheet_name = 'onlyK200', index = False)
+df4.to_excel(writer, sheet_name = 'addKOSDAQ', index = False)
 writer.save()

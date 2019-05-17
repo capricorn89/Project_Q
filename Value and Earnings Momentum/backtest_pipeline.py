@@ -167,6 +167,16 @@ def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = 
     
     return inv_money_history, tradeCost_history
 
+
+
+
+
+
+
+
+
+
+
 #
 #
 ## BM 대비 성과 측정
