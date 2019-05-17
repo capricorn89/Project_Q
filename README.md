@@ -1,10 +1,19 @@
 # Project_Q
-Quantitative Money Making Ideas
+Quantitative Ideas
 
 # Contents 
-< Basics >
+## As is:
+
+#### Lecture 
+1. Basic Pandas
+
+#### Value & Earning Momentum
 1. Stock selection algorithms
 2. Backtest pipelines
 3. Further thoughts
 
-< Asset allocation models >
+
+## To be:
+
+#### Asset allocation models
+####  
