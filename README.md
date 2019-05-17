@@ -13,6 +13,8 @@ Quantitative Ideas
 2. Backtest pipelines
 3. Further thoughts
 
-### To be:
-#### Asset allocation models
-####  
+
+## To be:
+
+### Asset allocation models
+###  
