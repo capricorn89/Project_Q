@@ -1,0 +1,1 @@
+## Lecture Note for Python
