@@ -1,5 +1,5 @@
 # Project_Q
-Quantitative Money Making Ideas
+Quantitative Ideas
 
 # Contents 
 ## As is:
