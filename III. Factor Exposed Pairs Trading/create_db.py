@@ -28,7 +28,7 @@ sql_create_table_firmName = """ CREATE TABLE IF NOT EXISTS firmName (
                                     ); """
 util.create_tables('rdata.db', sql_create_table_firmName)
 conn = util.create_connection_db('rdata.db')
-firmCodes = pd.read_excel('firmCode.xlsx')  # 데이터 삭제됨
+#firmCodes = pd.read_excel('firmCode.xlsx')  # 데이터 삭제됨
 firmCodes.to_sql('firmName', con=conn, if_exists='append', index=False)
 conn.execute("SELECT * FROM firmName").fetchall()
 
@@ -42,13 +42,28 @@ sql_create_table_firmInfo = """ CREATE TABLE IF NOT EXISTS firmInfo (
                                         sector text,
                                         PRIMARY KEY (code, date)
                                     ); """
+util.create_tables('rdata.db', sql_create_table_firmInfo)
 conn = util.create_connection_db('rdata.db')
-sector.to_sql('firmInfo', con = conn, if_exists = 'append', index = False)
+
+sector.dropna().to_sql('firmInfo', con = conn, if_exists = 'append', index = False)
 conn.execute("SELECT * FROM firmInfo").fetchall()
-
-
-price = util.get_stock_price(firmCodes, '2007-01-01', '2018-04-30')  # 가격데이터 불러오기
-
-
 conn.close()
-
+# 용량이 너무 커져서 가격데이터는 db에 쌓지 않음
+#price = util.get_stock_price(firmCodes['Code'].values, '2007-01-01', '2018-04-30')  # 가격데이터 불러오기
+#price = pd.DataFrame(list(price))
+#price.columns = ['code', 'date', 'price']
+#sql_create_table_price = """ CREATE TABLE IF NOT EXISTS firmPrice (
+#                                        code text,
+#                                        date text NOT NULL,
+#                                        price REAL,
+#                                        PRIMARY KEY (code, date)
+#                                    ); """
+#conn = util.create_connection_db('rdata.db')
+#util.create_tables('rdata.db', sql_create_table_price)
+#price.to_sql('firmPrice', con=conn, if_exists='append', index = False)
+#conn.execute("SELECT * FROM firmprice WHERE code = 'A005930'").fetchall()
+#
+#conn.close()
+#
+#conn = util.create_connection_db('rdata.db')
+#conn.execute("SELECT * FROM firmInfo WHERE code = 'A005930'").fetchall()
