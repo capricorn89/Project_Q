@@ -1,18 +1,15 @@
-# Project_Q
+﻿# Project_Q
 Quantitative Ideas
 
 # Contents 
 ## As is:
 
-#### I. Lecture 
-1. Basic Pandas
-
-#### II. Value & Earning Momentum
+#### I. Value & Earning Momentum
 1. Stock selection algorithms
 2. Backtest pipelines
 3. Further thoughts
 
-#### III. Adaptive Multi Factor Strategy (MSCI)
+#### II. Adaptive Multi Factor Strategy (MSCI)
 
 아래 6개 지수 로테이션해서 검증
 고배당지수는 K200 가중지수가 아닌 고배당 50개에 투자하기 때문에 다른 팩터와 같은 컨셉이 아님
