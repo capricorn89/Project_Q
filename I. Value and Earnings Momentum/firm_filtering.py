@@ -2,7 +2,7 @@
 """
 Created on Wed Apr 24 10:16:29 2019
 
-@author: Woojin Ji
+@author: Woojin
 """
 
 path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData'
