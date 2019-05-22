@@ -5,8 +5,6 @@ Created on Fri May 17 13:21:49 2019
 @author: user
 """
 
-path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData/res'
-
 import os
 import pandas as pd
 import numpy as np
@@ -14,14 +12,6 @@ import datetime
 import calendar
 import pymysql
 from scipy.optimize import minimize
-
-os.chdir(path)
-
-
-#rebal_1 = pd.read_excel('basket_190517.xlsx', sheet_name = 'addKOSPI')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
-#asis_2 = pd.read_excel('basket_190517.xlsx', sheet_name = 'replacedwithKOSPI')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
-#asis_3 = pd.read_excel('basket_190517.xlsx', sheet_name = 'onlyK200')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
-#asis_4 = pd.read_excel('basket_190517.xlsx', sheet_name = 'addKOSDAQ')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
 
 
 def get_stock_price(stockCodes, date_start, date_end):
@@ -93,6 +83,7 @@ def maxSharpe(priceData, weight_mkt, threshold):
     x = x.sort_values(ascending=False)
 
     return x
+
 
 def optimizedSchedule(rebalData, buffer):
 

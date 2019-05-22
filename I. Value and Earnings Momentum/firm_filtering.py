@@ -5,8 +5,8 @@ Created on Wed Apr 24 10:16:29 2019
 @author: Woojin
 """
 
-path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData'
-
+path_data = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData'
+path_code = 'C:/Woojin/###. Git/Project_Q/I. Value and Earnings Momentum'
 import os
 import pandas as pd
 import numpy as np
@@ -14,7 +14,7 @@ import datetime
 import calendar
 import pymysql
 
-os.chdir(path)
+os.chdir(path_data)
 
 ##############################################################################
 # 0. 데이터 로드 & 클렌징
@@ -221,8 +221,6 @@ def getDT(numpyDateFormat):
 '''rebalancing schedule 첫날로 테스트 2004년 4월말 (3월말 기준 재무데이터 활용) '''
 rebalDateList = mktcap.index.values[3:]
 
-
-
 rebalDict = {}
 rebalDict_k200 = {}
 rebalDict_k200Weight = {}
@@ -262,12 +260,6 @@ rebalDataFinal_k200 = rebalData_k200.unstack(level=0).reset_index().sort_values(
 rebalDataFinal.columns = ['date', 'code']
 rebalDataFinal_k200.columns = ['date', 'code']
 
-newPath = path + '/res'
-os.chdir(newPath)
-rebalDataFinal.to_excel('firms_190517.xlsx', index = False)    
-rebalDataFinal_k200.to_excel('firms_190517_k200.xlsx', index = False)  
-
-
   
 ##############################################################################
 # 비중 부여
@@ -282,7 +274,7 @@ K200 비중 받아오되, 거래정지 관리종목 외감인 종목은 제외�
 
 from pandas.tseries.offsets import MonthEnd
 from copy import deepcopy
-os.chdir(path)
+os.chdir(path_data)
 
 k200 = pd.read_excel('kospi200_hist.xlsx')
 k200 = k200.iloc[1:,:]
@@ -292,6 +284,7 @@ k200.columns = ['date', 'code', 'k200_weight']
 
 risk_1.index = risk_1.index + MonthEnd(0)
 risk_2.index = risk_2.index + MonthEnd(0)  
+
 for idx in k200.index:
     notRisk_1 = risk_1.loc[k200.loc[idx, 'date'], :]
     notRisk_1 = notRisk_1[notRisk_1 == 0].index.values
@@ -302,7 +295,7 @@ for idx in k200.index:
     if (k200.loc[idx, 'code'] in notRisk_1) & (k200.loc[idx, 'code'] in notRisk_2):
         pass
     else:
-        print(idx)
+        #print(idx)
         k200.loc[idx, 'k200_weight'] = 0
         
 k200['k200_weight'] = k200['k200_weight'] / k200.groupby('date')['k200_weight'].transform('sum') # 지수 비중 노멀라이즈
@@ -438,10 +431,33 @@ df2 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sect
 df3 = addKOSPIfirms(rebalDataFinal_k200, k200, market, sector, replacement=False, sectorOn = True, addKQ = False)  #K200 ONly
 df4 = addKOSPIfirms(rebalDataFinal, k200, market, sector, replacement=True, sectorOn = True, addKQ = True)  # 기존 바스켓 하위 종목을 코스피, 코스닥으로 교체 
 
+##############################################################################
+# 비중 최적화
+##############################################################################   
+os.chdir(path_code)
+import optimization as opt
+
+df5 = opt.optimizedSchedule(df1, 0.005)
+df6 = opt.optimizedSchedule(df2, 0.005)
+df7 = opt.optimizedSchedule(df3, 0.005)
+df8 = opt.optimizedSchedule(df4, 0.005)
+
+newPath = path_data + '/res'
 os.chdir(newPath)
-writer = pd.ExcelWriter('basket_190517_70bp.xlsx', engine = 'xlsxwriter')        
+
+rebalDataFinal.to_excel('firms_190522.xlsx', index = False)    
+rebalDataFinal_k200.to_excel('firms_190522_k200.xlsx', index = False)  
+
+writer = pd.ExcelWriter('basket_190522.xlsx', engine = 'xlsxwriter')        
 df1.to_excel(writer, sheet_name = 'addKOSPI', index = False)
 df2.to_excel(writer, sheet_name = 'replacedwithKOSPI', index = False)
 df3.to_excel(writer, sheet_name = 'onlyK200', index = False)
 df4.to_excel(writer, sheet_name = 'addKOSDAQ', index = False)
+df5.to_excel(writer, sheet_name = 'addKOSPI_opt', index = False)
+df6.to_excel(writer, sheet_name = 'replacedwithKOSPI_opt', index = False)
+df7.to_excel(writer, sheet_name = 'onlyK200_opt', index =False)
+df8.to_excel(writer, sheet_name = 'addKOSDAQ_opt', index = False)
 writer.save()
+
+
+
