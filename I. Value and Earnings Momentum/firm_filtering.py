@@ -21,7 +21,9 @@ os.chdir(path_data)
 ##############################################################################
 
 def data_cleansing(rawData):
-    
+    '''Quantiwise 제공 재무데이터 클렌징 용도
+    YYYYMM 형태로 데이터가 나오기 때문에 yyyy-mm-dd 로 변경 (dd는 말일 날짜)
+    '''
     firmCode = rawData.iloc[7,5:].values
     yearIndex = [int(str(x)[:4]) for x in rawData.iloc[10:,1].values]
     monthIndex = [int(str(x)[4:]) for x in rawData.iloc[10:,1].values]
@@ -37,7 +39,10 @@ def data_cleansing(rawData):
     return newData
 
 def data_cleansing_ts(rawData):
-    
+    '''Quantiwise 제공 시계열데이터 클렌징 용도
+    - 열 : 종목명
+    - 행 : 시계열
+    '''    
     firmCode = rawData.iloc[6, 1:].values
     dateIndex = rawData.iloc[13:, 0].values
     newData = rawData.iloc[13:,1:]

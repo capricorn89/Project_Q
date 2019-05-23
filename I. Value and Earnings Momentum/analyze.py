@@ -68,14 +68,14 @@ def get_index_price(stockCodes, date_start, date_end):
 
 dollar = 1000  # Dollar invested
 
-port_1, _ = backtest.get_backtest_history(dollar, rebal_1, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_2, _ = backtest.get_backtest_history(dollar, rebal_2, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_3, _ = backtest.get_backtest_history(dollar, rebal_3, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_4, _ = backtest.get_backtest_history(dollar, rebal_4, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_5, _ = backtest.get_backtest_history(dollar, rebal_5, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_6, _ = backtest.get_backtest_history(dollar, rebal_6, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_7, _ = backtest.get_backtest_history(dollar, rebal_7, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_8, _ = backtest.get_backtest_history(dollar, rebal_8, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_1, tc_1, to_1 = backtest.get_backtest_history(dollar, rebal_1, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_2, tc_2, to_2 = backtest.get_backtest_history(dollar, rebal_2, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_3, tc_3, to_3 = backtest.get_backtest_history(dollar, rebal_3, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_4, tc_4, to_4 = backtest.get_backtest_history(dollar, rebal_4, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_5, tc_5, to_5 = backtest.get_backtest_history(dollar, rebal_5, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_6, tc_6, to_6 = backtest.get_backtest_history(dollar, rebal_6, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_7, tc_7, to_7 = backtest.get_backtest_history(dollar, rebal_7, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
+port_8, tc_8, to_8 = backtest.get_backtest_history(dollar, rebal_8, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
 
 ports = [port_1, port_2, port_3, port_4, port_5, port_6, port_7, port_8]
 for i in range(len(ports)):
@@ -87,40 +87,53 @@ data = pd.concat([port_1, port_2, port_3, port_4, port_5, port_6, port_7, port_8
 data.to_excel('result_190522_70bp.xlsx')
 
 
-rebal_old = pd.read_excel('basket_190507_v2.xlsx')
-port_old, _ = backtest.get_backtest_history(dollar, rebal_old, equal_weight = False, roundup = False, tradeCost = 0.007) # 백테스트 결과 출력 
-port_old.to_excel('result_190507_v2.xlsx')
-
 ###############################################################################
 # Load Backtests
 ###############################################################################
 
-data = pd.read_excel('result_190517.xlsx', sheet_name = '70bp')
-data = data.iloc[:, :8]
+data = pd.read_excel('result_190522_70bp.xlsx', sheet_name = 'raw')
+data = data.iloc[:, :9]
 
 def cagr(bb, eb, n):
     return ( (eb/bb) ** (1/n) ) - 1
 
 def sharpe_annual(priceSeries):  
     return (priceSeries.pct_change().mean() / priceSeries.pct_change().std() )  * np.sqrt(252)
-
+   
 
 # Print CAGR, Sharpe ratio
     
 for i in range(len(data.columns)):
+    
     
     print(data.columns[i])
     end = data.iloc[-1, i]
     start = data.iloc[1, i]
     n = 17 + (1/3)
     print("CAGR : ", "{:.2f}".format(cagr(start, end, n) * 100), "%")
-    print("Sharpe Ratio : ", "{:.4f}".format(sharpe_annual(data.iloc[1:, i])))
     print('\n')
     
+sharpe = data.resample('Y').apply(sharpe_annual)    
+sharpe.to_excel('sharpe_190522.xlsx')
 
+# Turnover
     
+def weightHistory(rebalData):
 
+    pf = {}    
+    for i, _ in rebalData.groupby('date'):
+        pf[i] = _[['code','weight']].set_index('code')    
 
+    for i in range(len(pf)):
+        if i == 0:
+            pf_monthly =  pf[list(pf.keys())[0]]
+            pf_monthly.columns = [list(pf.keys())[0]]            
+        elif i > 0 :            
+            pf_next = pf[list(pf.keys())[i]]
+            pf_next.columns = [list(pf.keys())[i]]
+            pf_monthly = pd.merge(pf_monthly, pf_next, how='outer', left_on = pf_monthly.index, right_on = pf_next.index).set_index('key_0')
+        
+    return pf_monthly
 
 
 

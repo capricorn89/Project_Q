@@ -102,6 +102,7 @@ def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = 
     rebal_date = list(set(rebalData.date))
     rebal_date.sort()
     tradeCost_history = {}
+    turnover_history = {}
     inv_money_list = [dollar_inv]   
     inv_money_date = [rebal_date[0]]
     
@@ -157,11 +158,11 @@ def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = 
         inv_money_list += [dollar_ongoing]
         inv_money_date += list(basket_price.index[1:])  
         tradeCost_history[''.join([x for x in str(rebal_date[i+1])[:10] if x != '-'])] = tradingCost
-        
+        turnover_history[''.join([x for x in str(rebal_date[i+1])[:10] if x != '-'])] = tradingCost / dollar_ongoing
         
     inv_money_history = pd.DataFrame(inv_money_list, index = inv_money_date) 
     
-    return inv_money_history, tradeCost_history
+    return inv_money_history, tradeCost_history, turnover_history
 
 ####################################
 #            Visualize  

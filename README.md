@@ -20,6 +20,16 @@ Quantitative Ideas
  * Low Vol : K200 로우볼가중지수 (IKS430)
  * High Yield : K200 고배당지수 (IKS225)
  
+#### III. Factor Exposed Pairs Trading
+
+팩터 기준으로 페어를 찾아서 (ex. 저밸류, 고밸류 페어) 트레이딩하는게 유효한지 확인
+
+
+#### IV. Factor Model Test Bed
+
+Single-Factor, Multi-Factor 를 Input으로 받아서 수익률이 유의미한지 확인
+
+
 ## To be:
 #### Adaptive Multi Factor Strategy (MSCI)
 * 고배당지수의 Proxy 찾아야함
