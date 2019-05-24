@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 os.chdir('C:/Woojin/###. Git/Project_Q/I. Value and Earnings Momentum')    
 import backtest_pipeline as backtest
+import util
 path = 'C:/Woojin/##. To-do/value_earnMom 전략/rawData/res'
 os.chdir(path)
 
@@ -25,7 +26,7 @@ os.chdir(path)
 # Save Backtests
 ###############################################################################
 
-fileName = 'basket_190522.xlsx'
+fileName = 'basket_190524.xlsx'
 sheetNames = xlrd.open_workbook(fileName, on_demand = True).sheet_names()
 print(sheetNames)
 
@@ -38,33 +39,6 @@ rebal_6 = pd.read_excel(fileName, sheet_name = 'replacedwithKOSPI_opt')[['date',
 rebal_7 = pd.read_excel(fileName, sheet_name = 'onlyK200_opt')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
 rebal_8 = pd.read_excel(fileName, sheet_name = 'addKOSDAQ_opt')[['date','code', 'weight']] # 리밸런싱 스케쥴 로드
 
-
-def get_index_price(stockCodes, date_start, date_end):
-    '''
-    input: 
-    - stockcodes : list
-    - date_start : datetime
-    - date_end : datetiem
-    
-    output : DataFrame
-    - Index : Stock code
-    - value : Stock Price
-    '''
-    date_start = ''.join([x for x in str(date_start)[:10] if x != '-'])
-    date_end = ''.join([x for x in str(date_end)[:10] if x != '-'])
-    db = pymysql.connect(host='192.168.1.190', port=3306, user='root', passwd='gudwls2@', db='quant_db',charset='utf8',autocommit=True)
-    cursor = db.cursor()
-    joined = "\',\'".join(stockCodes)
-    sql = "SELECT U_CD, TRD_DT, CLS_PRC FROM dg_udsise WHERE TRD_DT BETWEEN " + date_start
-    sql += ' AND ' + date_end
-    sql += (" AND U_CD IN (\'" + joined + "\')")
-    cursor.execute(sql)
-    data = cursor.fetchall()
-    data = pd.DataFrame(list(data))
-    data = data.pivot(index = 1, columns = 0, values = 2)
-    data.index = pd.to_datetime(data.index.values)
-    db.close()   
-    return data
 
 dollar = 1000  # Dollar invested
 
@@ -81,17 +55,25 @@ ports = [port_1, port_2, port_3, port_4, port_5, port_6, port_7, port_8]
 for i in range(len(ports)):
     ports[i].columns = [sheetNames[i]]
 
+turnover = [to_1, to_2, to_3, to_4, to_5, to_6, to_7, to_8]
+for i in range(len(turnover)):    
+    turnover[i] = pd.DataFrame(list(turnover[i].values()), index = list(turnover[i].keys()))
+    turnover[i].columns = [sheetNames[i]]
+turnover = pd.concat(turnover, axis = 1)
 
-bm = get_index_price(['I.001','I.101'], port_1.index[0], port_1.index[-1])/100
+
+bm = util.get_index_price(['I.001','I.101'], port_1.index[0], port_1.index[-1])/100
 data = pd.concat([port_1, port_2, port_3, port_4, port_5, port_6, port_7, port_8 , bm], axis= 1)
-data.to_excel('result_190522_70bp.xlsx')
+
+turnover.to_excel('turnover_190524.xlsx')
+data.to_excel('result_190524_70bp.xlsx')
 
 
 ###############################################################################
 # Load Backtests
 ###############################################################################
 
-data = pd.read_excel('result_190522_70bp.xlsx', sheet_name = 'raw')
+data = pd.read_excel('result_190524_70bp.xlsx', sheet_name = 'raw')
 data = data.iloc[:, :9]
 
 def cagr(bb, eb, n):
@@ -104,7 +86,6 @@ def sharpe_annual(priceSeries):
 # Print CAGR, Sharpe ratio
     
 for i in range(len(data.columns)):
-    
     
     print(data.columns[i])
     end = data.iloc[-1, i]
@@ -119,7 +100,7 @@ sharpe.to_excel('sharpe_190522.xlsx')
 # Turnover
     
 def weightHistory(rebalData):
-
+    rebalData = rebalData[rebalData['weight'] > 1e-6]
     pf = {}    
     for i, _ in rebalData.groupby('date'):
         pf[i] = _[['code','weight']].set_index('code')    
@@ -135,8 +116,8 @@ def weightHistory(rebalData):
         
     return pf_monthly
 
-
-
+portHistory_6 = weightHistory(rebal_6)
+portHistory_6.to_excel('portHistory_6.xlsx')
 
 
 
