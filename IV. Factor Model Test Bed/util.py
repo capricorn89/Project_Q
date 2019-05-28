@@ -108,8 +108,8 @@ def get_amt_money(weightList, totalMoney):
     '''    
     return weightList * totalMoney
 
-def get_recentBday(date):
-    
+def get_recentBday(date, dateFormat = 'sql'):
+    '''최근 영업일자 추출'''
     date = ''.join([x for x in str(date)[:10] if x != '-'])
     db = pymysql.connect(host='192.168.1.190', port=3306, user='root', passwd='gudwls2@', db='quant_db',charset='utf8',autocommit=True)
     cursor = db.cursor()    
@@ -119,8 +119,15 @@ def get_recentBday(date):
     data = cursor.fetchall()
     data = data[-1][0]
     db.close()
+    
+    if dateFormat == 'sql':
+        data = data
+    elif dateFormat == 'datetime':
+        data = pd.datetime(int(data[:4]),int(data[4:6]), int(data[6:]))
+    else:
+        pass
+    
     return data
-
 
 
 def get_num_stock(moneyList, priceList):
@@ -142,6 +149,87 @@ def get_equalweight(stockCode):
     return np.ones(len(stockCode)) / len(stockCode)
 
 
+def getFinancialData(factorData, rebalDate, dataPeriod='Q'):
+
+    ''' 분기 발표 재무데이터 사용 기준 (가용 시점이 다르기 때문)
+    
+    가용 최신 데이터 : 매월말 기준으로 해당분기의 직전 분기말 
+    
+        종목 선정 시점     |   가용데이터 인덱스  (T)        |   가용데이터 인덱스 (T-1)
+    ---------------------------------------------------------------------------------
+            3월말          |        12말(전년)              |       9말
+            4월말          |        12말(전년)              |       9말
+            5월말          |        12말(전년)              |       9말
+            6월말          |         3말(당해)              |       12말
+            7월말          |         3말(당해)              |       12말
+            8월말          |         3말(당해)              |       12말
+            9월말          |         6말(당해)              |       3말
+           10월말          |         6말(당해)              |       3말
+           11월말          |         6말(당해)              |       3말     
+           12월말          |         9말(당해)              |       6말    
+            1월말          |         9말(전년)              |       6말
+            2월말          |         9말(전년)              |       6말
+    '''
+
+    if (rebalDate.month >=3) & (rebalDate.month <= 5):
+        t_year = rebalDate.year - 1
+        t_month = 12
+        
+    elif (rebalDate.month >= 6) & (rebalDate.month <= 8):
+        t_year = rebalDate.year
+        t_month = 3
+        
+    elif (rebalDate.month >= 9) & (rebalDate.month <= 11):
+        t_year = rebalDate.year
+        t_month = 6        
+
+    elif rebalDate.month == 12:
+        t_year = rebalDate.year
+        t_month = 9    
+
+    elif (rebalDate.month >= 1) & (rebalDate.month <= 2):
+        t_year = rebalDate.year - 1
+        t_month = 9    
+
+    else:
+        print('데이터 확인 필요')      
+
+    t_day = calendar.monthrange(t_year, t_month)[1]  
+    date_available = pd.datetime(t_year, t_month, t_day)
+    data = factorData.loc[:date_available,:].iloc[-1,:].dropna()
+
+    return data
+
+def getUniverse(marketInfoData, mktcapData, riskInfo_1, riskInfo_2, rebalDate_, 
+                universeName = 'KOSPI', mktcapLimit = 2000):
+    '''market에서 KOSPI인 종목 중에서
+    거래정지, 관리종목인 종목 거르고,
+    시가총액 2000억 미만 거르고, 
+    20일 평균거래대금 10억 이상으로 필터링'''
+    
+    # 상장시장
+    m = marketInfoData.loc[rebalDate_, :]
+    inMarket = m[m == universeName].index.values
+    
+    # 거래정지
+    notRisk_1 = riskInfo_1.loc[rebalDate_, :]
+    notRisk_1 = notRisk_1[notRisk_1 == 0].index.values
+    
+    #관리종목
+    notRisk_2 = riskInfo_2.loc[rebalDate_, :]
+    notRisk_2 = notRisk_2[notRisk_2 == 0].index.values
+    
+#    # 거래대금 기준
+#    v = volInfo.loc[rebalDate_, :]
+#    above10 = v[v >= tradeVolLimit].index.values
+#    
+    # 시총기준
+    cap = mktcapData.loc[rebalDate_, :]
+    cap = cap[cap >= mktcapLimit].index.values
+           
+    res = set(set(set(inMarket).intersection(notRisk_1)).intersection(notRisk_2)).intersection(cap)
+    
+    return list(res)
 
 ####################################
 #            Visualize  
