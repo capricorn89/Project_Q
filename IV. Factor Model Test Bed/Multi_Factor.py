@@ -44,8 +44,9 @@ factor_PER = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'ea
 
 # I. Cross-sectional
 
-'''동 기간에서 Factor exposure가 큰 종목에 투자 '''
-# ex. Value & Momentum (Sales to Price, Book to Price, 모멘텀이 높은 종목)
+'''동 기간에서 Factor exposure가 큰 종목에 투자 
+ex. Value & Momentum (Sales to Price, Book to Price, 모멘텀이 높은 종목)
+'''
 
 def get_priceRatio_multi(factorData, mktcapData):
     code_f = factorData.index.values
@@ -77,23 +78,26 @@ def to_portfolio(codes, rebalDate, weight = 'equal'):
     return df
 
 
-
 rebalData_long = []
 rebalData_short = []
 num_group = 5
 method = 'integrated'
 
+
 for i in tqdm(range(len(rebal_sche))):
-        
+
     date_spot = util.get_recentBday(rebal_sche[i], dateFormat = 'datetime')
     univ_ = util.getUniverse(marketInfo, mktcap, risk_1, risk_2, date_spot)
     psr_spot = util.getFinancialData(factor_PSR, date_spot)[univ_]
     pbr_spot = util.getFinancialData(factor_PBR, date_spot)[univ_]
-    
+   
+    # I-1. Integrated Method (Signal Blend, 개별 팩터 스코어를 모두 더해 한번에 주식을 뽑는 방법)
     if method == 'integrated':
-        # I-1. Integrated Method (Signal Blend, 개별 팩터 스코어를 모두 더해 한번에 주식을 뽑는 방법)
-        factorName = ['sales', 'book']
+
+        factorName = ['sales','book']
+#        factorName = ['book']
         multifactor_df = pd.concat([psr_spot, pbr_spot], axis = 1, sort = False)
+#        multifactor_df = pd.concat([pbr_spot], axis = 1, sort = False)
         multifactor_df.columns = factorName
         mktcaps = util.get_mktcap(multifactor_df.index.values, date_spot, date_spot)
         
@@ -119,18 +123,24 @@ for i in tqdm(range(len(rebal_sche))):
      
     else:
         pass
-    
+
 rebalData_long = pd.concat(rebalData_long).reset_index()[['date','code','weight']]
 rebalData_short = pd.concat(rebalData_short).reset_index()[['date','code','weight']]
+print('Portfolio completed')
 
+#rebalData_long.to_excel('multifator_basket_long_' + method + '.xlsx')
+#rebalData_long.to_excel('multifator_basket_short_' + method + '.xlsx')
 
-
-
-
-
-
-
-
+result_long = bt.get_backtest_history(1000, rebalData_long)[0]
+result_short = bt.get_backtest_history(1000, rebalData_short)[0]
+result = pd.concat([result_long, result_short], axis = 1)
+result.columns = ['long', 'short']
+result['longShort_return'] = np.subtract(result.pct_change()['long'],result.pct_change()['short'])
+bm = util.get_index_price(['I.001','I.101'], result_long.index[0], result_long.index[-1])/100
+result = pd.concat([result, bm], axis = 1)
+result['I.101_return'] = result['I.101'].pct_change()
+(result[['longShort_return', 'I.101_return']] + 1).cumprod().plot()
+result.to_excel('multifactor.xlsx')
 
 
 
