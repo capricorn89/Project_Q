@@ -4,7 +4,6 @@ Created on Tue May 28 15:19:57 2019
 
 @author: Woojin
 
-
 < Multi-factor Model >
 
 """
@@ -33,19 +32,21 @@ start_invest = pd.datetime(start_year, start_month, start_day)
 end_invest = pd.datetime(end_year, end_month, end_day)
 rebal_sche = pd.date_range(start_invest, end_invest, freq = 'M')
 
+# Load market info data
 marketInfo = util.data_cleansing_ts(pd.read_excel('testData.xlsx', sheet_name = 'market'))
 mktcap = util.data_cleansing_ts(pd.read_excel('testData.xlsx', sheet_name = 'mktcap'))
 risk_1 = util.data_cleansing_ts(pd.read_excel('testData.xlsx', sheet_name = 'risk_1'))
 risk_2 = util.data_cleansing_ts(pd.read_excel('testData.xlsx', sheet_name = 'risk_2'))
 
+# Load factor data
 factor_PSR = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'sales'))
 factor_PBR = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'book'))
 factor_PER = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'earnings'))
 
 # I. Cross-sectional
 
-'''동 기간에서 Factor exposure가 큰 종목에 투자 
-ex. Value & Momentum (Sales to Price, Book to Price, 모멘텀이 높은 종목)
+''' 
+ex. Value & Momentum (Sales to Price, Book to Price, Momentum)
 '''
 
 def get_priceRatio_multi(factorData, mktcapData):
@@ -102,13 +103,13 @@ for i in tqdm(range(len(rebal_sche))):
         mktcaps = util.get_mktcap(multifactor_df.index.values, date_spot, date_spot)
         
         port = get_priceRatio_multi(multifactor_df, mktcaps)
-        mom_spot = util.get_priceMom(univ_, date_spot)  # 모멘텀 지표 추가
+        mom_spot = util.get_priceMom(univ_, date_spot)  # Add momentum factor
         port = pd.concat([port, mom_spot], axis = 1, sort=False)
-        port = to_zscore(port) # Z-score 로 환산   
+        port = to_zscore(port) # trasnform to Z-score  
         
         port = get_multifactor_score(port)
         port = pd.qcut(port, num_group, labels =False)
-        port_long  = to_portfolio(port[port  == num_group - 1].index.values, date_spot)  # 합산 지표가 가장 높은 종목군 Long
+        port_long  = to_portfolio(port[port  == num_group - 1].index.values, date_spot)  # Long : Highest 20% having total z-score
         port_short = to_portfolio(port[port == 0].index.values, date_spot)
     
         rebalData_long.append(port_long)
