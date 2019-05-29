@@ -14,6 +14,7 @@ import xlrd
 import time
 import sys
 from tqdm import tqdm
+from scipy import stats
 import calendar
 
 def data_cleansing(rawData):
@@ -63,6 +64,33 @@ def get_stock_price(stockCodes, date_start, date_end):
     cursor = db.cursor()
     joined = "\',\'".join(stockCodes)
     sql = "SELECT GICODE, TRD_DT, ADJ_PRC FROM dg_fns_jd WHERE TRD_DT BETWEEN " + date_start
+    sql += ' AND ' + date_end
+    sql += (" AND GICODE IN (\'" + joined + "\')")
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    data = pd.DataFrame(list(data))
+    data = data.pivot(index = 1, columns = 0, values = 2)
+    data.index = pd.to_datetime(data.index.values)
+    db.close()   
+    return data
+
+def get_mktcap(stockCodes, date_start, date_end):
+    '''
+    input: 
+    - stockcodes : list
+    - date_start : datetime
+    - date_end : datetiem
+    
+    output : DataFrame
+    - Index : Stock code
+    - value : Stock Price
+    '''
+    date_start = ''.join([x for x in str(date_start)[:10] if x != '-'])
+    date_end = ''.join([x for x in str(date_end)[:10] if x != '-'])
+    db = pymysql.connect(host='192.168.1.190', port=3306, user='root', passwd='gudwls2@', db='quant_db',charset='utf8',autocommit=True)
+    cursor = db.cursor()
+    joined = "\',\'".join(stockCodes)
+    sql = "SELECT GICODE, TRD_DT, (ADJ_PRC * LIST_STK_CNT)/100000000 MKTCAP FROM dg_fns_jd WHERE TRD_DT BETWEEN " + date_start
     sql += ' AND ' + date_end
     sql += (" AND GICODE IN (\'" + joined + "\')")
     cursor.execute(sql)
@@ -230,6 +258,31 @@ def getUniverse(marketInfoData, mktcapData, riskInfo_1, riskInfo_2, rebalDate_,
     res = set(set(set(inMarket).intersection(notRisk_1)).intersection(notRisk_2)).intersection(cap)
     
     return list(res)
+
+
+def using_mstats(s):
+    return stats.mstats.winsorize(s, limits=[0.05, 0.05])
+
+def winsorize_df(df):
+    return df.apply(using_mstats, axis=0)
+
+def get_priceMom(codes, rebalDate):
+    
+    yearAgo = rebalDate - datetime.timedelta(days=365)
+    monthAgo = rebalDate - datetime.timedelta(days=30)
+    
+    yearAgo = get_recentBday(yearAgo)
+    monthAgo = get_recentBday(monthAgo)
+    rebalDate = get_recentBday(rebalDate)
+    
+    prices = get_stock_price(codes, yearAgo, rebalDate)
+    
+    mom_12M = (prices.loc[rebalDate, :] / prices.loc[yearAgo, :]) - 1
+    mom_1M = (prices.loc[rebalDate, :] / prices.loc[monthAgo, :]) - 1
+    
+    momData = (mom_12M - mom_1M).dropna()
+    
+    return momData   
 
 ####################################
 #            Visualize  

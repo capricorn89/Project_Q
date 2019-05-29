@@ -17,10 +17,12 @@ import pymysql
 from tqdm import tqdm
 import calendar
 from scipy import stats
+
+os.chdir('C:/Woojin/###. Git/Project_Q/IV. Factor Model Test Bed')
+
 import backtest_pipeline as bt
 import util
 
-os.chdir('C:/Woojin/###. Git/Project_Q/IV. Factor Model Test Bed')
 
 start_year, start_month = 2006, 12
 start_day = calendar.monthrange(start_year, start_month)[1]
@@ -39,3 +41,99 @@ risk_2 = util.data_cleansing_ts(pd.read_excel('testData.xlsx', sheet_name = 'ris
 factor_PSR = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'sales'))
 factor_PBR = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'book'))
 factor_PER = util.data_cleansing(pd.read_excel('testData.xlsx', sheet_name = 'earnings'))
+
+# I. Cross-sectional
+
+'''동 기간에서 Factor exposure가 큰 종목에 투자 '''
+# ex. Value & Momentum (Sales to Price, Book to Price, 모멘텀이 높은 종목)
+
+def get_priceRatio_multi(factorData, mktcapData):
+    code_f = factorData.index.values
+    code_p = mktcapData.columns.values
+    code = list(set(code_f).intersection(code_p))
+    #print(code)
+    ratioData = pd.DataFrame(index = code, columns = factorData.columns)
+    ratioData[factorData.columns] = factorData.loc[code,:].values    
+    ratioData['mktcap'] = mktcapData[code].values[0]    
+    
+    for factors in factorData.columns:
+        ratioData[factors] = ratioData[factors] / ratioData['mktcap'] 
+    
+    return ratioData[factorData.columns].dropna(how='all')
+
+def to_zscore(factor):
+    return (factor - factor.mean()) / factor.std()
+
+def get_multifactor_score(factor_df):
+    factor_df = to_zscore(factor_df)
+    factor_df['score'] = factor_df.sum(axis=1)
+    return factor_df['score']
+
+def to_portfolio(codes, rebalDate, weight = 'equal'):       
+    df = pd.DataFrame(index = range(len(codes)), columns = ['date','code', 'weight'])
+    df['code'] = codes
+    df['weight'] = np.ones(len(codes)) / len(codes)
+    df['date'] = rebalDate
+    return df
+
+
+
+rebalData_long = []
+rebalData_short = []
+num_group = 5
+method = 'integrated'
+
+for i in tqdm(range(len(rebal_sche))):
+        
+    date_spot = util.get_recentBday(rebal_sche[i], dateFormat = 'datetime')
+    univ_ = util.getUniverse(marketInfo, mktcap, risk_1, risk_2, date_spot)
+    psr_spot = util.getFinancialData(factor_PSR, date_spot)[univ_]
+    pbr_spot = util.getFinancialData(factor_PBR, date_spot)[univ_]
+    
+    if method == 'integrated':
+        # I-1. Integrated Method (Signal Blend, 개별 팩터 스코어를 모두 더해 한번에 주식을 뽑는 방법)
+        factorName = ['sales', 'book']
+        multifactor_df = pd.concat([psr_spot, pbr_spot], axis = 1, sort = False)
+        multifactor_df.columns = factorName
+        mktcaps = util.get_mktcap(multifactor_df.index.values, date_spot, date_spot)
+        
+        port = get_priceRatio_multi(multifactor_df, mktcaps)
+        mom_spot = util.get_priceMom(univ_, date_spot)  # 모멘텀 지표 추가
+        port = pd.concat([port, mom_spot], axis = 1, sort=False)
+        port = to_zscore(port) # Z-score 로 환산   
+        
+        port = get_multifactor_score(port)
+        port = pd.qcut(port, num_group, labels =False)
+        port_long  = to_portfolio(port[port  == num_group - 1].index.values, date_spot)  # 합산 지표가 가장 높은 종목군 Long
+        port_short = to_portfolio(port[port == 0].index.values, date_spot)
+    
+        rebalData_long.append(port_long)
+        rebalData_short.append(port_short)
+
+    # I-2. Composite Method (개별 팩터별로 익스포저가 높은 종목을 뽑은 뒤 합치는 방법)        
+    elif method == 'composite':
+        pass
+    # I-3. Priority Method (1번 팩터로 거른 뒤 , 2번 팩터로 거르는 식으로 순차적으로 종목을 필터링하는 방법)    
+    elif method == 'priority':
+        pass
+     
+    else:
+        pass
+    
+rebalData_long = pd.concat(rebalData_long).reset_index()[['date','code','weight']]
+rebalData_short = pd.concat(rebalData_short).reset_index()[['date','code','weight']]
+
+
+
+
+
+
+
+
+
+
+
+
+
+# II. Time Series 
+
