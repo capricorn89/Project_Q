@@ -99,15 +99,15 @@ def getFactorData(factorData, rebalDate, dataPeriod='Q'):
     return data
         
 
-def get_priceRatio(priceData, factorData):      
+def get_priceRatio(mktcapData, factorData):      
   
     code_f = factorData.index.values
-    code_p = priceData.columns.values
+    code_p = mktcapData.columns.values
     code = list(set(code_f).intersection(code_p))
     
     ratioData = pd.DataFrame(index = code)
     ratioData['factor'] = factorData[code].values
-    ratioData['price'] = priceData[code].values[0]
+    ratioData['price'] = mktcapData[code].values[0]
     
     ratioData = ratioData[ratioData['factor'] != 0]
         
@@ -119,13 +119,13 @@ def get_priceRatio(priceData, factorData):
     
     return ratioData['ratio']
  
-
-
 def using_mstats(s):
     return stats.mstats.winsorize(s, limits=[0.05, 0.05])
 
 def winsorize_df(df):
     return df.apply(using_mstats, axis=0)
+
+
 
 
 def get_longshort(ratioData, num_group = 10, asc = True, sector_on = False, allGroup = False):
@@ -219,8 +219,8 @@ def get_portfolio(factor, factorStyle = 'ratio'):
             
             factor = factor.loc[:,univ_]  
             factor_ = getFactorData(factor, rebalDate_)
-            price_ = util.get_stock_price(factor_.index.values, rebalDate_, rebalDate_)
-            ratio_ = get_priceRatio(price_, factor_)
+            mktcap_ = util.get_mktcap(factor_.index.values, rebalDate_, rebalDate_)
+            ratio_ = get_priceRatio(mktcap_, factor_)
             long, short = get_longshort(ratio_, num_group = 10)
             longFinal = to_backtestFormat(long, rebalDate_)
             shortFinal = to_backtestFormat(short, rebalDate_)            
