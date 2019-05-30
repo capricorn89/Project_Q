@@ -324,7 +324,7 @@ def get_inverseVol(codes, rebalDate):
     yearAgo = get_recentBday(yearAgo)
     rebalDate = get_recentBday(rebalDate)
     
-    prices = get_stock_price(codes, yearAgo, rebalDate)
+    prices = get_stock_price(codes, yearAgo, rebalDate).pct_change()
     inverseVol = 1 / prices.std()
     
     return inverseVol 
