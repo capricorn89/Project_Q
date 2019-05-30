@@ -30,10 +30,8 @@ def get_platform():
     
     return platforms[sys.platform]
 
-win_path = 'C:/Woojin/1. Codes/Adaptive Multi Factor Strategy'
+win_path = 'C:/Woojin/###. Git/Project_Q/II. Adaptive Multi Factor Strategy'
 mac_path = '/Users/Woojin/Desktop/2019 Project/Adaptive Factor Allocation'
-
-
 
 if get_platform() == 'Windows':
     path = win_path
@@ -77,7 +75,7 @@ IV. Market Sentiment Indicators
  
 '''
 
-factorPrice = pd.read_excel('Factor Return.xlsx')  # 지수 수익률 로드
+factorPrice = pd.read_excel('macrodata.xlsx', sheet_name = 'factor')  # 지수 수익률 로드
 
 def data_cleansing_ts(rawData):  # 퀀티 데이터 클렌징 함수 (위에 지저분한 열,행 날리기)    
     firmCode = rawData.iloc[6, 1:].values
@@ -86,18 +84,19 @@ def data_cleansing_ts(rawData):  # 퀀티 데이터 클렌징 함수 (위에 지
     newData.columns = firmCode
     newData.index = dateIndex
     return newData
+
 factorPrice = data_cleansing_ts(factorPrice)
-factorPrice.columns = ['market', 'size', 'yield', 'value', 'quality', 'momentum', 'lowvol']
+factorPrice.columns = ['market', 'size', 'value', 'quality', 'momentum', 'lowvol']
 
 # 데일리 수익률
 factorReturn = factorPrice.pct_change()
-factorReturn['EW'] = factorReturn[['size', 'yield', 'value', 'quality', 'momentum','lowvol']].mean(axis=1)
+factorReturn['EW'] = factorReturn[['size', 'value', 'quality', 'momentum','lowvol']].mean(axis=1)
 (factorReturn + 1).cumprod().plot(figsize=(10,6)) #데일리 팩터별 상대수익률 
 
 # 매달 10번째 거래일 추출하여 월간 수익률 계산 (지난 달의 macro 지표가 통상 월초에 나오는 것을 감안)
 factorPrice_10th = factorPrice.groupby(pd.Grouper(freq='M')).nth(10)
 factorReturn_10th = factorPrice_10th.pct_change()
-factorReturn_10th['EW'] = factorReturn_10th[['size', 'yield', 'value', 'quality', 'momentum','lowvol']].mean(axis=1)  # 동일가중은 팩터수익률의 평균
+factorReturn_10th['EW'] = factorReturn_10th[['size', 'value', 'quality', 'momentum','lowvol']].mean(axis=1)  # 동일가중은 팩터수익률의 평균
 (1+factorReturn_10th).cumprod().plot(figsize=(10,6))  # 월간 팩터별 상대수익률
 
 
@@ -134,7 +133,7 @@ _______________________________________________________________________________
 '''
 
 # 1. 각 지표별로 3MA, 12MA 계산하고 그에 따라 국면 부여 (R, E, S, C)
-macroData = pd.read_excel('Macro Indicators.xlsx', sheet_name = 'Data').set_index('Date')[['OECD_CLI','ESI']]
+macroData = pd.read_excel('macroData.xlsx', sheet_name = 'macro').set_index('Date')[['OECD_CLI','ESI']]
 numIndicator = len(macroData.columns)
 for i in range(numIndicator):
     
@@ -184,7 +183,7 @@ for i in range(numIndicator):
 ex. 1월 지표를 바탕으로 2월의 팩터 수익률 가져올 것 
     (1월 지표 확인 후, 1월의 10번째 거래일에 투자 --> 2월의 10번째 거래일에 청산하는 컨셉)
 '''
-from dateutil.relativedelta import *
+import dateutil.relativedelta
 
 def get_return_byRegime(regimeSeries, returnSeries, indicatorName):  # 국면 데이터, 수익률 데이터를 통해 백테스트 결과 도출
     factors_return_list = [0]
@@ -192,12 +191,12 @@ def get_return_byRegime(regimeSeries, returnSeries, indicatorName):  # 국면 �
     for i in range(1,len(returnSeries)):
         
         date = returnSeries.index[i]  # 수익률이 나오는 시점 
-        date_indicator = date - relativedelta(months=+1)  # 지표가 나오는 시점 (수익률이 나오는 시점보다 한 시점 앞)
+        date_indicator = date - dateutil.relativedelta(months=+1)  # 지표가 나오는 시점 (수익률이 나오는 시점보다 한 시점 앞)
         regime = regimeSeries.loc[:date_indicator].tail(1).get_values()[0]  # 1개 이전 시점의 국면 확인
         #print(date, regime)
         # 국면에 따라 들어갈 팩터 3개 선정
         if regime == 'R':  # 회복국면 : Value, Size, Yield
-            factors = ['value', 'size', 'yield']
+            factors = ['value', 'size']
         elif regime == 'E': # 확장국면 : Momentum, Size, Value
             factors = ['value', 'size', 'momentum']
         elif regime =='S':  # 둔화국면 : Momentum, Quality, LowVol
