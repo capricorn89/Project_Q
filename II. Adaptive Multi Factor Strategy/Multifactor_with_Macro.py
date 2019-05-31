@@ -127,7 +127,7 @@ def find_factor(regime):
 
 start_year, start_month = 2005, 12
 start_day = calendar.monthrange(start_year, start_month)[1]
-end_year, end_month = 2019, 3
+end_year, end_month = 2019, 4
 end_day = calendar.monthrange(end_year, end_month)[1]
 
 start_invest = pd.datetime(start_year, start_month, start_day)
@@ -188,7 +188,7 @@ for i in tqdm(range(len(rebal_sche))):
     size_spot = util.to_zscore(util.winsorize_df(size_spot))
     
     # 3. Momentum
-    mom_spot = util.get_priceMom(univ_, date_spot)  # Add momentum factor
+    mom_spot = util.get_adjMom(univ_, date_spot)  # Add momentum factor
     mom_spot = pd.concat([mom_spot], axis = 1, sort = False)
     mom_spot = util.to_zscore(util.winsorize_df(mom_spot))
     
@@ -252,24 +252,18 @@ result['longShort_return'] = np.subtract(result.pct_change()['long'],result.pct_
 bm = util.get_index_price(['I.001','I.101'], result_long.index[0], result_long.index[-1])/100
 result = pd.concat([result, bm], axis = 1)
 result['I.101_return'] = result['I.101'].pct_change()
-(result[['longShort_return', 'I.101_return']] + 1).cumprod().plot()
-date = datetime.datetime.today()
-result.to_excel('res_' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
-rebalData_long.to_excel('basket_long_190530.xlsx')
-rebalData_short.to_excel('basket_short_190530.xlsx')
+
 factorNameList = pd.DataFrame(factorNameList, index = rebal_sche)
 regimeList = pd.DataFrame(regimeList, index = rebal_sche)
 factorName = pd.concat([regimeList, factorNameList], axis = 1)
-factorName.to_excel('factorName.xlsx')
+date = datetime.datetime.today()
+result.to_excel('res_' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
+rebalData_long.to_excel('basket_long_'+ str(date.year) + str(date.month) + str(date.day) + '.xlsx')
+rebalData_short.to_excel('basket_short' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
+factorName.to_excel('factorName' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
+
+
+pd.concat([(result[['longShort_return', 'I.101_return']] + 1).cumprod(), macroData],axis =1 ).plot()
+
 
 # II. Time Series 
-
-regimeList = []
-for i in tqdm(range(len(rebal_sche))):
-    
-    date_spot = util.get_recentBday(rebal_sche[i], dateFormat = 'datetime')
-    univ_ = util.getUniverse(marketInfo, mktcap, risk_1, risk_2, date_spot)
-    macro_regime = find_regime(macroData, date_spot)  # 해당시점의 국면 확인
-    factor_names = find_factor(macro_regime)  # 확인된 국면에 따라 작동하는 팩터 추출
-
-    regimeList.append(macro_regime)

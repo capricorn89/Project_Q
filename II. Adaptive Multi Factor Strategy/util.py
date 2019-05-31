@@ -316,6 +316,26 @@ def get_priceMom(codes, rebalDate):
     
     return momData   
 
+def get_adjMom(codes, rebalDate):
+    
+    yearAgo = rebalDate - datetime.timedelta(days=365)
+    monthAgo = rebalDate - datetime.timedelta(days=30)
+    
+    yearAgo = get_recentBday(yearAgo)
+    monthAgo = get_recentBday(monthAgo)
+    rebalDate = get_recentBday(rebalDate)
+    
+    prices = get_stock_price(codes, yearAgo, rebalDate)
+    
+    mom_12M = (prices.loc[rebalDate, :] / prices.loc[yearAgo, :]) - 1
+    mom_1M = (prices.loc[rebalDate, :] / prices.loc[monthAgo, :]) - 1
+    
+    momData = mom_12M - mom_1M
+    returnVOL = prices.pct_change().std()
+    momData = (momData / returnVOL).dropna()
+    
+    return momData
+
 
 def get_inverseVol(codes, rebalDate):
     '''1년간 일별 수익률 표준편차의 역수'''
