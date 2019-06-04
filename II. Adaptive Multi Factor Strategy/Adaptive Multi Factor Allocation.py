@@ -193,14 +193,16 @@ for i in range(len(regime_esi)):
 regime_esi.index = newDateIndex
 return_by_regime = pd.concat([regime_esi, factorReturn_10th], axis = 1).dropna()    
 avgreturn_by_regime = return_by_regime.groupby('ESI_indic').mean() * 100
+avgExcessReturn_regime = avgreturn_by_regime.subtract(avgreturn_by_regime['market'], axis=0)
 
 barWidth = 0.1  # the width of the bars
 # set height of bar
-bar1 = avgreturn_by_regime['size'].values
-bar2 = avgreturn_by_regime['value'].values
-bar3 = avgreturn_by_regime['quality'].values
-bar4 = avgreturn_by_regime['momentum'].values
-bar5 = avgreturn_by_regime['lowvol'].values
+bar1 = avgExcessReturn_regime['size'].values
+bar2 = avgExcessReturn_regime['value'].values
+bar3 = avgExcessReturn_regime['quality'].values
+bar4 = avgExcessReturn_regime['momentum'].values
+bar5 = avgExcessReturn_regime['lowvol'].values
+#bar6 = avgExcessReturn_regime['market'].values
 
 # Set position of bar on X axis
 r1 = np.arange(len(bar1))
@@ -208,17 +210,19 @@ r2 = [x + barWidth for x in r1]
 r3 = [x + barWidth for x in r2]
 r4 = [x + barWidth for x in r3]
 r5 = [x + barWidth for x in r4]
+#r6 = [x + barWidth for x in r5]
 
 # Make the plot
-plt.bar(r1, bar1, color='r', width=barWidth, edgecolor='white', label='size')
+plt.bar(r1, bar1, color='orange', width=barWidth, edgecolor='white', label='size')
 plt.bar(r2, bar2, color='y', width=barWidth, edgecolor='white', label='value')
-plt.bar(r3, bar3, color='g', width=barWidth, edgecolor='white', label='quality')
-plt.bar(r4, bar4, color='k', width=barWidth, edgecolor='white', label='mom')
-plt.bar(r5, bar5, color='b', width=barWidth, edgecolor='white', label='lowvol')
+plt.bar(r3, bar3, color='green', width=barWidth, edgecolor='white', label='quality')
+plt.bar(r4, bar4, color='black', width=barWidth, edgecolor='white', label='mom')
+plt.bar(r5, bar5, color='blue', width=barWidth, edgecolor='white', label='lowvol')
+#plt.bar(r6, bar6, color='grey', width=barWidth, edgecolor='white', label='market')
 
 # Add xticks on the middle of the group bars
 plt.xlabel('Regime', fontweight='bold')
-plt.xticks([r + barWidth for r in range(len(bar1))], ['C', 'E', 'R', 'S'])
+plt.xticks([r + barWidth for r in range(len(bar1))], ['Contraction', 'Expansion', 'Recession', 'Slowdown'])
  
 # Create legend & Show graphic
 plt.legend()
