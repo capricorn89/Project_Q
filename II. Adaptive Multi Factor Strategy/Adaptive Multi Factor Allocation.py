@@ -75,7 +75,7 @@ IV. Market Sentiment Indicators
  
 '''
 
-factorPrice = pd.read_excel('macrodata.xlsx', sheet_name = 'factor')  # 지수 수익률 로드
+factorPrice = pd.read_excel('macroData.xlsx', sheet_name = 'factorIndex')  # 지수 수익률 로드
 
 def data_cleansing_ts(rawData):  # 퀀티 데이터 클렌징 함수 (위에 지저분한 열,행 날리기)    
     firmCode = rawData.iloc[6, 1:].values
@@ -176,6 +176,55 @@ for i in range(numIndicator):
     ax.scatter(macroIndicator.index.values, macroIndicator[valName].values, marker='o',
                color = list(macroIndicator[valName + '_indic'].apply(lambda x: colors[x]).values))
     plt.show()
+
+# 각 국면별 지표의 평균 수익률 확인
+    ''' ESI 지수 활용'''
+import calendar   
+import matplotlib
+import matplotlib.pyplot as plt
+
+regime_esi = pd.DataFrame(macroIndicator['ESI_indic'])
+newDateIndex = []
+for i in range(len(regime_esi)): 
+    yearIndex = pd.to_datetime(regime_esi.index.values[i]).year
+    monthIndex = pd.to_datetime(regime_esi.index.values[i]).month
+    days = calendar.monthrange(yearIndex, monthIndex)[1]
+    newDateIndex.append(datetime.datetime(yearIndex, monthIndex, days))
+regime_esi.index = newDateIndex
+return_by_regime = pd.concat([regime_esi, factorReturn_10th], axis = 1).dropna()    
+avgreturn_by_regime = return_by_regime.groupby('ESI_indic').mean() * 100
+
+barWidth = 0.1  # the width of the bars
+# set height of bar
+bar1 = avgreturn_by_regime['size'].values
+bar2 = avgreturn_by_regime['value'].values
+bar3 = avgreturn_by_regime['quality'].values
+bar4 = avgreturn_by_regime['momentum'].values
+bar5 = avgreturn_by_regime['lowvol'].values
+
+# Set position of bar on X axis
+r1 = np.arange(len(bar1))
+r2 = [x + barWidth for x in r1]
+r3 = [x + barWidth for x in r2]
+r4 = [x + barWidth for x in r3]
+r5 = [x + barWidth for x in r4]
+
+# Make the plot
+plt.bar(r1, bar1, color='r', width=barWidth, edgecolor='white', label='size')
+plt.bar(r2, bar2, color='y', width=barWidth, edgecolor='white', label='value')
+plt.bar(r3, bar3, color='g', width=barWidth, edgecolor='white', label='quality')
+plt.bar(r4, bar4, color='k', width=barWidth, edgecolor='white', label='mom')
+plt.bar(r5, bar5, color='b', width=barWidth, edgecolor='white', label='lowvol')
+
+# Add xticks on the middle of the group bars
+plt.xlabel('Regime', fontweight='bold')
+plt.xticks([r + barWidth for r in range(len(bar1))], ['C', 'E', 'R', 'S'])
+ 
+# Create legend & Show graphic
+plt.legend()
+plt.show()
+
+       
 
 # 2. 각 국면에 맞는 팩터 추출 후 수익률 계산
     
