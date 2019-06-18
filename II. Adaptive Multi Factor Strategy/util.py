@@ -16,6 +16,9 @@ import sys
 from tqdm import tqdm
 from scipy import stats
 import calendar
+from bokeh.plotting import figure, output_file, show
+from bokeh.layouts import column
+from bokeh.models import LinearAxis, Range1d
 
 def data_cleansing(rawData):
     '''Quantiwise 제공 재무데이터 클렌징 용도
@@ -365,7 +368,52 @@ def get_multifactor_score(factor_df):
     factor_df['score'] = factor_df.sum(axis=1)
     return factor_df['score']
 
+def get_drawdown(Series):    
+    dd_Series = []
+    prev_high = 0
+    for i in range(len(Series)):
+        if i == 0:
+            prev_high = 0
+            dd = 0
+            dd_Series.append(dd)
+        else:
+            prev_high = max(Series[:i])            
+            if prev_high > Series[i]:                
+                dd = Series[i] - prev_high
+                #print(dd)
+            else:
+                prev_high = Series[i]
+                dd = 0                
+            #print(prev_high)
 
+            dd_Series.append(dd)
+    dd_Series = pd.Series(dd_Series)    
+    return dd_Series
+
+
+def plot_ts_dual(x, y1, y2, y1_name = 'TS_1', y2_name = 'TS_2' , rebase=True):
+    
+    '''
+    x : datetime index
+    y1 : timeSeries 1
+    y2 : timeSeries 2
+    '''
+    
+    if rebase == True:
+        y1 = ( y1.pct_change().fillna(0) + 1 ).cumprod() * 100
+        y2 = ( y2.pct_change().fillna(0) + 1 ).cumprod() * 100
+
+    else:
+        pass    
+    
+    ## add a line renderer with legend and line thickness
+    p1 = figure(plot_width=800, plot_height=300, x_axis_type="datetime",
+                x_axis_label='Date')    
+    p1.line(x, y1.values, legend = y1_name, color = 'red', line_width=2)
+    p1.line(x, y2.values, legend = y2_name, color = 'grey', line_width=2)
+    p1.legend.location = "top_left"
+    p1.legend.click_policy="hide"    
+    show(p1)
 
 ####################################
 #            Visualize  

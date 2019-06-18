@@ -19,7 +19,7 @@ from scipy import stats
 
 os.chdir('C:/Woojin/###. Git/Project_Q/II. Adaptive Multi Factor Strategy')
 
-import backtest_pipeline as bt
+import backtest_pipeline_ver2 as bt
 import util
 
 
@@ -125,6 +125,20 @@ def find_factor(regime):
     return factor
 
 
+def find_factor_exSize(regime):
+    
+    if regime == 'recovery':
+        factor = ['value', 'yield']       
+    elif regime == 'expansion':
+        factor = ['momentum', 'value']
+    elif regime == 'slowdown':
+        factor = ['momentum', 'quality', 'lowvol']
+    elif regime == 'contraction':
+        factor = ['lowvol', 'quality', 'value']
+    else:
+        pass
+    return factor
+
 start_year, start_month = 2005, 12
 start_day = calendar.monthrange(start_year, start_month)[1]
 end_year, end_month = 2019, 4
@@ -171,9 +185,14 @@ for i in tqdm(range(len(rebal_sche))):
     date_spot = util.get_recentBday(rebal_sche[i], dateFormat = 'datetime')
     univ_ = util.getUniverse(marketInfo, mktcap, risk_1, risk_2, date_spot)
     macro_regime = find_regime(macroData, date_spot)  # 해당시점의 국면 확인
-    factor_names = find_factor(macro_regime)  # 확인된 국면에 따라 작동하는 팩터 추출
+    
+    #factor_names = find_factor(macro_regime)  # 확인된 국면에 따라 작동하는 팩터 추출
+    factor_names = find_factor_exSize(macro_regime)  # 확인된 국면에 따라 작동하는 팩터 추출 (사이즈 팩터 제외 시)
+    
+    
     factorNameList.append(factor_names)
     regimeList.append(macro_regime)
+    
     # 1. Value
     value_spot = util.getFinancialData(factor_book, date_spot)[univ_] # Start from value factor
     value_spot = pd.concat([value_spot], axis = 1, sort = False)
@@ -249,6 +268,8 @@ result_short = bt.get_backtest_history(1000, rebalData_short)[0]
 result = pd.concat([result_long, result_short], axis = 1)
 result.columns = ['long', 'short']
 result['longShort_return'] = np.subtract(result.pct_change()['long'],result.pct_change()['short'])
+
+
 bm = util.get_index_price(['I.001','I.101'], result_long.index[0], result_long.index[-1])/100
 result = pd.concat([result, bm], axis = 1)
 result['I.101_return'] = result['I.101'].pct_change()
@@ -263,7 +284,13 @@ rebalData_short.to_excel('basket_short' + str(date.year) + str(date.month) + str
 factorName.to_excel('factorName' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
 
 
-pd.concat([(result[['longShort_return', 'I.101_return']] + 1).cumprod(), macroData],axis =1 ).plot()
+x_ = result.index
+y_1 = result['long']
+y_2 = result['I.101']
+util.plot_ts_dual(x_, y_1, y_2, y1_name = 'Portfolio', y2_name = 'K200' , rebase=True)
+
+
+#pd.concat([(result[['longShort_return', 'I.101_return']] + 1).cumprod(), macroData],axis =1 ).plot()
 
 
 # II. Time Series 

@@ -163,6 +163,7 @@ for i in range(numIndicator):
         else:
             continue
 
+        
 
 # 지표를 부여된 국면에 따라 서로 다른 색으로 표시되도록 Plot
 #from matplotlib.collections import LineCollection
@@ -330,6 +331,9 @@ momentumAndMacro_.get_cumReturnPlot(['12M', 'quality', 'yield', 'market', 'EW'])
 ##############################################################################
 #. 시장 수익률의 Undefined Regimes 확인하기?
 ##############################################################################
+
+
+
 
 
 
