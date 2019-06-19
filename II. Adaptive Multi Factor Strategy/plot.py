@@ -30,7 +30,6 @@ from bokeh.models import HoverTool
 
 result = pd.read_excel('res_2019618.xlsx')
 
-
 x = result.index
 y1 = (result['longShort_return'].fillna(0)+1).cumprod() * 100
 y2 = (result['I.101_return'].fillna(0) + 1).cumprod() * 100
