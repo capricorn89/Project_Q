@@ -27,6 +27,7 @@ from bokeh.transform import factor_cmap
 from bokeh.palettes import Spectral10
 from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
+from bokeh.models.widgets import Button, TextInput
 
 result = pd.read_excel('res_2019618.xlsx')
 
@@ -59,7 +60,7 @@ p2.legend.location = "bottom_left"
 
 show(column(p1,p2))
 
-
+#
 #hover = p1.select(dict(type=HoverTool))
 #hover.tooltips= [("Date", "$x"),
 #                ("Portfolio : ", "$y1"),
