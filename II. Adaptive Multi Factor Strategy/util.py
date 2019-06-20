@@ -71,6 +71,7 @@ def get_stock_price(stockCodes, date_start, date_end):
     sql += (" AND GICODE IN (\'" + joined + "\')")
     cursor.execute(sql)
     data = cursor.fetchall()
+
     data = pd.DataFrame(list(data))
     data = data.pivot(index = 1, columns = 0, values = 2)
     data.index = pd.to_datetime(data.index.values)
@@ -391,6 +392,8 @@ def get_drawdown(Series):
     return dd_Series
 
 
+    
+    
 def plot_ts_dual(x, y1, y2, y1_name = 'TS_1', y2_name = 'TS_2' , rebase=True):
     
     '''
@@ -414,6 +417,27 @@ def plot_ts_dual(x, y1, y2, y1_name = 'TS_1', y2_name = 'TS_2' , rebase=True):
     p1.legend.location = "top_left"
     p1.legend.click_policy="hide"    
     show(p1)
+
+
+
+def plot_BollingerBand(Series, n=20, k=2):
+    
+    import matplotlib.pyplot as plt
+    
+    df = pd.DataFrame(columns = ['value', 'Bol_upper', 'Bol_lower'], index = Series.index)
+    df['value'] = Series
+    df['Bol_upper'] = Series.rolling(n).mean() + k* Series.rolling(n).std()
+    df['Bol_lower'] = Series.rolling(n).mean() - k* Series.rolling(n).std()
+
+    fig, ax = plt.subplots(figsize=(16,6))
+    df['value'].plot(color= 'b')
+    df['Bol_upper'].plot(color='y', style = '--')
+    df['Bol_lower'].plot(color='y',style = '--')
+    #line3, = ax.plot(Series.index, Series['Bol_lower'], dashes=[2,2])
+    
+    plt.show()
+    
+
 
 ####################################
 #            Visualize  
