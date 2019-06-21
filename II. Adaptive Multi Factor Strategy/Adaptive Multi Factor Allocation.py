@@ -346,12 +346,14 @@ momentumAndMacro_.get_cumReturnPlot(['12M', 'quality', 'yield', 'market', 'EW'])
 '''
 Market Sentiment Based Factor Allocation
  : 시장 전반의 Risk-on/off 에 따라 투자
- - VKOSPI (Future) Curve 이용
-   : 상향 (Normal. Spot < Future)   ==> Value, Momentum, Size
-     하향 (Stressed. Spot > Future) ==> LowVol, Quality, Yield
+ - VKOSPI Future Curve (1month / 3month slope)
+   : Risk-on, upward slope (Normal. Spot < Future)   ==> Value, Momentum, Size
+     Risk-off, downward slope (Stressed. Spot > Future) ==> LowVol, Quality, Yield
 
-VKOSPI Future Curve가 제대로 확보되지 않았음 ==> 실패
 '''
+
+
+
 
 ##############################################################################
 # IV. Valuation Based Factor Allocation
