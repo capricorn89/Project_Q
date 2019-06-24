@@ -314,8 +314,6 @@ def get_return_byMomentum(factorReturnData, window):  # 팩터 수익률 데이�
         
     momentumReturn_list = pd.DataFrame(momentumReturn_list, index=dateIndex)
     pickedFactorList = pd.DataFrame(pickedFactorList, index=dateIndex)
-
-
     return momentumReturn_list, pickedFactorList
 
 mom12_return, factorMomentum_12 = get_return_byMomentum(factorReturn_10th, 12)
