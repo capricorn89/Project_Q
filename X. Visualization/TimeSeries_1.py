@@ -16,8 +16,8 @@ import numpy as np
 #import holoviews as hv
 #from holoviews import opts
 
-os.chdir('C:/Woojin/###. Git/Project_Q/X. Visualization')
-         
+#os.chdir('C:/Woojin/###. Git/Project_Q/X. Visualization')
+os.chdir('/Users/Woojin/Documents/GitHub/Project_Q/X. Visualization')         
 ts = pd.read_excel('test_timeseries.xlsx', sheet_name = 'Sheet1')
 
 # output to static HTML file
