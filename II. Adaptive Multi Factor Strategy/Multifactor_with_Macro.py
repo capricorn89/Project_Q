@@ -283,14 +283,3 @@ rebalData_long.to_excel('basket_long_'+ str(date.year) + str(date.month) + str(d
 rebalData_short.to_excel('basket_short' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
 factorName.to_excel('factorName' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
 
-
-x_ = result.index
-y_1 = result['long']
-y_2 = result['I.101']
-util.plot_ts_dual(x_, y_1, y_2, y1_name = 'Portfolio', y2_name = 'K200' , rebase=True)
-
-
-#pd.concat([(result[['longShort_return', 'I.101_return']] + 1).cumprod(), macroData],axis =1 ).plot()
-
-
-# II. Time Series 

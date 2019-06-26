@@ -16,9 +16,6 @@ import sys
 from tqdm import tqdm
 from scipy import stats
 import calendar
-from bokeh.plotting import figure, output_file, show
-from bokeh.layouts import column
-from bokeh.models import LinearAxis, Range1d
 
 def data_cleansing(rawData):
     '''Quantiwise 제공 재무데이터 클렌징 용도
@@ -37,6 +34,25 @@ def data_cleansing(rawData):
     newData.index = newDateIndex
     
     return newData
+
+def data_cleansing_as(rawData):
+    '''Quantiwise 제공 재무데이터 클렌징 용도
+    YYYYMM 형태로 데이터가 나오기 때문에 yyyy-mm-dd 로 변경 (dd는 말일 날짜)
+    '''
+    firmCode = rawData.iloc[7,5:].values
+    yearIndex = [int(str(x)[:4]) for x in rawData.iloc[10:,1].values]
+    monthIndex = [12 for x in rawData.iloc[10:,1].values]
+    newDateIndex = []
+    for i in range(len(yearIndex)):
+        days = calendar.monthrange(yearIndex[i], monthIndex[i])[1]
+        newDateIndex.append(datetime.datetime(yearIndex[i], monthIndex[i], days))
+    
+    newData = rawData.iloc[10:,5:]
+    newData.columns = firmCode
+    newData.index = newDateIndex
+    
+    return newData
+
 
 def data_cleansing_ts(rawData):
     '''Quantiwise 제공 시계열데이터 클렌징 용도
@@ -71,7 +87,6 @@ def get_stock_price(stockCodes, date_start, date_end):
     sql += (" AND GICODE IN (\'" + joined + "\')")
     cursor.execute(sql)
     data = cursor.fetchall()
-
     data = pd.DataFrame(list(data))
     data = data.pivot(index = 1, columns = 0, values = 2)
     data.index = pd.to_datetime(data.index.values)
@@ -232,38 +247,6 @@ def getFinancialData(factorData, rebalDate, dataPeriod='Q'):
 
     return data
 
-def getFinancialData_TTM(factorData, rebalDate, dataPeriod='Q'):
-
-    if (rebalDate.month >=3) & (rebalDate.month <= 5):
-        t_year = rebalDate.year - 1
-        t_month = 12
-        
-    elif (rebalDate.month >= 6) & (rebalDate.month <= 8):
-        t_year = rebalDate.year
-        t_month = 3
-        
-    elif (rebalDate.month >= 9) & (rebalDate.month <= 11):
-        t_year = rebalDate.year
-        t_month = 6        
-
-    elif rebalDate.month == 12:
-        t_year = rebalDate.year
-        t_month = 9    
-
-    elif (rebalDate.month >= 1) & (rebalDate.month <= 2):
-        t_year = rebalDate.year - 1
-        t_month = 9    
-
-    else:
-        print('데이터 확인 필요')      
-
-    t_day = calendar.monthrange(t_year, t_month)[1]  
-    date_available = pd.datetime(t_year, t_month, t_day)
-    data = factorData.loc[:date_available,:].iloc[-4:,:].sum().dropna()
-
-    return data
-
-
 def getUniverse(marketInfoData, mktcapData, riskInfo_1, riskInfo_2, rebalDate_, 
                 universeName = 'KOSPI', mktcapLimit = 2000):
     '''market에서 KOSPI인 종목 중에서
@@ -297,7 +280,7 @@ def getUniverse(marketInfoData, mktcapData, riskInfo_1, riskInfo_2, rebalDate_,
 
 
 def using_mstats(s):
-    return stats.mstats.winsorize(s, limits=[0.025, 0.025])
+    return stats.mstats.winsorize(s, limits=[0.05, 0.05])
 
 def winsorize_df(df):
     return df.apply(using_mstats, axis=0)
@@ -319,125 +302,6 @@ def get_priceMom(codes, rebalDate):
     momData = (mom_12M - mom_1M).dropna()
     
     return momData   
-
-def get_adjMom(codes, rebalDate):
-    
-    yearAgo = rebalDate - datetime.timedelta(days=365)
-    monthAgo = rebalDate - datetime.timedelta(days=30)
-    
-    yearAgo = get_recentBday(yearAgo)
-    monthAgo = get_recentBday(monthAgo)
-    rebalDate = get_recentBday(rebalDate)
-    
-    prices = get_stock_price(codes, yearAgo, rebalDate)
-    
-    mom_12M = (prices.loc[rebalDate, :] / prices.loc[yearAgo, :]) - 1
-    mom_1M = (prices.loc[rebalDate, :] / prices.loc[monthAgo, :]) - 1
-    
-    momData = mom_12M - mom_1M
-    returnVOL = prices.pct_change().std()
-    momData = (momData / returnVOL).dropna()
-    
-    return momData
-
-
-def get_inverseVol(codes, rebalDate):
-    '''1년간 일별 수익률 표준편차의 역수'''
-    
-    yearAgo = rebalDate - datetime.timedelta(days=365)
-    yearAgo = get_recentBday(yearAgo)
-    rebalDate = get_recentBday(rebalDate)
-    
-    prices = get_stock_price(codes, yearAgo, rebalDate).pct_change()
-    inverseVol = 1 / prices.std()
-    
-    return inverseVol 
-
-def to_portfolio(codes, rebalDate, weight = 'equal'):       
-    df = pd.DataFrame(index = range(len(codes)), columns = ['date','code', 'weight'])
-    df['code'] = codes
-    df['weight'] = np.ones(len(codes)) / len(codes)
-    df['date'] = rebalDate
-    return df
-
-def to_zscore(factor):
-    return (factor - factor.mean()) / factor.std()
-
-
-def get_multifactor_score(factor_df):
-    factor_df = to_zscore(factor_df)
-    factor_df['score'] = factor_df.sum(axis=1)
-    return factor_df['score']
-
-def get_drawdown(Series):    
-    dd_Series = []
-    prev_high = 0
-    for i in range(len(Series)):
-        if i == 0:
-            prev_high = 0
-            dd = 0
-            dd_Series.append(dd)
-        else:
-            prev_high = max(Series[:i])            
-            if prev_high > Series[i]:                
-                dd = Series[i] - prev_high
-                #print(dd)
-            else:
-                prev_high = Series[i]
-                dd = 0                
-            #print(prev_high)
-
-            dd_Series.append(dd)
-    dd_Series = pd.Series(dd_Series)    
-    return dd_Series
-
-
-    
-    
-def plot_ts_dual(x, y1, y2, y1_name = 'TS_1', y2_name = 'TS_2' , rebase=True):
-    
-    '''
-    x : datetime index
-    y1 : timeSeries 1
-    y2 : timeSeries 2
-    '''
-    
-    if rebase == True:
-        y1 = ( y1.pct_change().fillna(0) + 1 ).cumprod() * 100
-        y2 = ( y2.pct_change().fillna(0) + 1 ).cumprod() * 100
-
-    else:
-        pass    
-    
-    ## add a line renderer with legend and line thickness
-    p1 = figure(plot_width=800, plot_height=300, x_axis_type="datetime",
-                x_axis_label='Date')    
-    p1.line(x, y1.values, legend = y1_name, color = 'red', line_width=2)
-    p1.line(x, y2.values, legend = y2_name, color = 'grey', line_width=2)
-    p1.legend.location = "top_left"
-    p1.legend.click_policy="hide"    
-    show(p1)
-
-
-
-def plot_BollingerBand(Series, n=20, k=2):
-    
-    import matplotlib.pyplot as plt
-    
-    df = pd.DataFrame(columns = ['value', 'Bol_upper', 'Bol_lower'], index = Series.index)
-    df['value'] = Series
-    df['Bol_upper'] = Series.rolling(n).mean() + k* Series.rolling(n).std()
-    df['Bol_lower'] = Series.rolling(n).mean() - k* Series.rolling(n).std()
-
-    fig, ax = plt.subplots(figsize=(16,6))
-    df['value'].plot(color= 'b')
-    df['Bol_upper'].plot(color='y', style = '--')
-    df['Bol_lower'].plot(color='y',style = '--')
-    #line3, = ax.plot(Series.index, Series['Bol_lower'], dashes=[2,2])
-    
-    plt.show()
-    
-
 
 ####################################
 #            Visualize  
