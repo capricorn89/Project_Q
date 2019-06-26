@@ -27,7 +27,7 @@ output :
 
 '''
 
-def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = False, tradeCost = 0.01):
+def get_backtest_history(dollar_inv, rebalData, roundup = False, tradeCost = 0.01):
     
     
     dollar_ongoing = dollar_inv
@@ -44,13 +44,8 @@ def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = 
       
         rebalDate = rebal_date[i]  # 리밸런싱 시점         
         stock_list_i = rebalData[rebalData.date == rebal_date[i]].code  # 기간별 종목 리스트 
-        #print(rebalDate)
-        # 동일가중 / 시총가중        
-        if equal_weight == True:
-            w_ = util.get_equalweight(stock_list_i)  
-        else:
-            w_ = rebalData[rebalData.date == rebal_date[i]].weight
-
+    
+        w_ = rebalData[rebalData.date == rebal_date[i]].weight
         weightData = pd.concat([stock_list_i, w_], axis = 1).set_index('code')        
             
         if i == 0:
@@ -83,24 +78,27 @@ def get_backtest_history(dollar_inv, rebalData, equal_weight = False, roundup = 
         #print(inv_money_list)
         
         # Trading Cost 반영
-        if equal_weight == True:
-            pass       
+        # 투자기간 마지막 시점 (다음리밸) 에서의 가격
+        last_price = util.get_stock_price(weightData.index.values, 
+                                          util.get_recentBday(rebal_date[i+1]), 
+                                          util.get_recentBday(rebal_date[i+1])).transpose()  
         
-        else:
-            # 투자기간 마지막 시점 (다음리밸) 에서의 가격
-            last_price = util.get_stock_price(weightData.index.values, 
-                                              util.get_recentBday(rebal_date[i+1]), 
-                                              util.get_recentBday(rebal_date[i+1])).transpose()  
-            
-            weightData = pd.merge(weightData, last_price, how = 'inner', 
-                                  left_on = weightData.index, 
-                                  right_on = last_price.index).set_index('key_0')
-            
-            weightData.columns = ['weight', 'money', 'price', 'n_stocks', 'last_price']
-            
-            weightData['last_weight'] = (weightData.last_price * weightData.n_stocks) / (weightData.last_price * weightData.n_stocks).sum()  # 투자기간의 마지막 시점에서의 비중         
-            weightData['new_weight'] = rebalData[rebalData.date == rebal_date[i+1]].set_index('code')['weight']  # 새로운 비중            
-            tradingCost = np.abs(weightData.new_weight - weightData.last_weight).sum() * tradeCost * dollar_ongoing
+        weightData = pd.merge(weightData, last_price, how = 'outer', 
+                              left_on = weightData.index, 
+                              right_on = last_price.index).set_index('key_0')
+        
+        weightData.columns = ['weight', 'money', 'price', 'n_stocks', 'last_price']
+        
+        weightData['last_weight'] = (weightData.last_price * weightData.n_stocks) / (weightData.last_price * weightData.n_stocks).sum()  # 투자기간의 마지막 시점에서의 비중         
+        new_weight = rebalData[rebalData.date == rebal_date[i+1]].set_index('code')['weight']  # 새로운 비중
+        new_weight = pd.Series(new_weight, name='new_weight')         
+
+        weightData = pd.concat([weightData, new_weight], axis = 1)
+#        print(weightData['new_weight'].sum())
+        weightData['new_weight'] = weightData['new_weight'].fillna(0)
+        weightData['weight'] =weightData['weight'].fillna(0)
+        
+        tradingCost = np.abs(weightData.new_weight - weightData.last_weight).sum() * tradeCost * dollar_ongoing
         
         dollar_ongoing -= tradingCost     
         basket_history[rebalDate] = basket_price

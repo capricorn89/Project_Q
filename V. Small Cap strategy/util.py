@@ -158,12 +158,14 @@ def get_amt_money(weightList, totalMoney):
 def get_recentBday(date, dateFormat = 'sql'):
     '''최근 영업일자 추출'''
     date = ''.join([x for x in str(date)[:10] if x != '-'])
+#    print(date)
     db = pymysql.connect(host='192.168.1.190', port=3306, user='root', passwd='gudwls2@', db='quant_db',charset='utf8',autocommit=True)
     cursor = db.cursor()    
     sql = "SELECT DISTINCT TRD_DT FROM dg_fns_jd WHERE TRD_DT <=" + date 
     sql += " ORDER BY TRD_DT"
     cursor.execute(sql)
     data = cursor.fetchall()
+#    print(data)
     data = data[-1][0]
     db.close()
     
