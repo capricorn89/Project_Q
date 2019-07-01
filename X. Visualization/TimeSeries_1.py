@@ -26,7 +26,7 @@ os.chdir('C:/Woojin/###. Git/Project_Q/X. Visualization')
 ts = pd.read_excel('test_timeseries.xlsx', sheet_name = 'Sheet1')
 
 # output to static HTML file
-#output_file("lines.html")
+output_file("lines.html")
 
 # create a new plot with a title and axis labels
 

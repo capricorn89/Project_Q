@@ -15,7 +15,7 @@ path = 'C:/Woojin/###. Git/Project_Q/V. Small Cap strategy/Data'
 os.chdir(path)
 
 #%%
-
+filename = 'data.xlsx'
 total = pd.read_excel(filename, None)
 
 sheets = list(total.keys())
@@ -33,7 +33,7 @@ for name in sheets:
 
     data.append(temp)
 #%%
-filename = 'data.xlsx'
+
 with open(filename[:filename.find('.')]+'.pkl', 'wb') as f:
     pickle.dump(data, f)
   
@@ -51,7 +51,7 @@ port = port & (data[6][2] == 0)  # 투자유의 X
 
 port = port & (data[7][2] < 20)  # per 20미만
 
-|#%%
+#%%
 
 for i in range(len(port)):
     
