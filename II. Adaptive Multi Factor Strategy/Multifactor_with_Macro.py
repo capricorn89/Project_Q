@@ -17,12 +17,13 @@ from tqdm import tqdm
 import calendar
 from scipy import stats
 
-os.chdir('C:/Woojin/###. Git/Project_Q/II. Adaptive Multi Factor Strategy')
+path = 'C:/Woojin/###. Git/Project_Q/II. Adaptive Multi Factor Strategy'
+os.chdir(path)
 
 import backtest_pipeline_ver2 as bt
 import util
 
-
+os.chdir(path + '/Data')
 
 '''
 II. Macro Cycle Indicators (Paper와 유사한 Proxy가 있는 2개 지수 - OECD, ESI 두 개 이용)
@@ -278,6 +279,8 @@ factorNameList = pd.DataFrame(factorNameList, index = rebal_sche)
 regimeList = pd.DataFrame(regimeList, index = rebal_sche)
 factorName = pd.concat([regimeList, factorNameList], axis = 1)
 date = datetime.datetime.today()
+
+os.chdir(path + '/Results')
 result.to_excel('res_' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')
 rebalData_long.to_excel('basket_long_'+ str(date.year) + str(date.month) + str(date.day) + '.xlsx')
 rebalData_short.to_excel('basket_short' + str(date.year) + str(date.month) + str(date.day) + '.xlsx')

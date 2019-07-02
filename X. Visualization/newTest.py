@@ -1,43 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 19 07:29:57 2019
+Created on Tue Jul  2 09:46:07 2019
 
-@author: Woojin
+@author: Woojin Ji
 """
-
-import pandas as pd
-import os
-import numpy as np
-import pymysql
-from tqdm import tqdm
-import calendar
-from scipy import stats
 from bokeh.plotting import figure, output_file, show
 from bokeh.layouts import column
 from bokeh.models import LinearAxis, Range1d
-from bokeh.transform import factor_cmap
-from bokeh.palettes import Spectral10
-from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
-from bokeh.models.widgets import Button, TextInput
 from bokeh.plotting import ColumnDataSource, figure
 from bokeh.models.widgets import Tabs, Panel, DateRangeSlider
+import numpy as np
+import pandas as pd
+import os
 from bokeh.transform import factor_cmap
 from bokeh.palettes import Spectral10
 from datetime import datetime
 from bokeh.io import curdoc
 
+os.chdir('C:/Woojin/###. Git/Project_Q/X. Visualization')
+#os.chdir('/Users/Woojin/Documents/GitHub/Project_Q/X. Visualization')         
 
-path = 'C:/Woojin/###. Git/Project_Q/II. Adaptive Multi Factor Strategy/'
-os.chdir(path)
-import backtest_pipeline_ver2 as bt
-import util
-
-##########################
-# 매크로 지표 그림
-##########################
-os.chdir(path + '/Data')
-macroData = pd.read_excel('macroData.xlsx', sheet_name = 'macro').set_index('Date')[['OECD_CLI','ESI']]
+macroData = pd.read_excel('test_timeseries.xlsx', sheet_name = 'macro').set_index('Date')[['OECD_CLI','ESI']]
 numIndicator = len(macroData.columns)
 
 for i in range(numIndicator):
@@ -84,11 +68,9 @@ p3.add_tools(HoverTool(
 p3.legend.location = "top_left"
 panel_2 = Panel(child = p3, title = 'Panel 2')
 
-##########################
-# 결과 그림
-##########################
-os.chdir(path + '/Results')
-result = pd.read_excel('res_201972.xlsx')
+
+# create a new plot with a title and axis labels
+ts = pd.read_excel('test_timeseries.xlsx', sheet_name = 'Sheet1')
 
 def drawdown(Series):    
     dd_Series = []
@@ -112,52 +94,36 @@ def drawdown(Series):
     dd_Series = pd.Series(dd_Series)    
     return dd_Series
 
-y1 = (result['longShort_return'].fillna(0)+1).cumprod() * 100
-y2 = (result['I.101_return'].fillna(0) + 1).cumprod() * 100
-y4 = (result['long'].pct_change().fillna(0) + 1).cumprod() * 100
-y3 = y1 - y2
-y5 = y4 - y2
+y1 = ( ts['long'].pct_change().fillna(0) + 1 ).cumprod() * 100
+y2 = ( ts['I.101'].pct_change().fillna(0) + 1 ).cumprod() * 100
 
-df = pd.DataFrame({'port' : y1,
-                   'bm' : y2,
-                   'longOnly' : y3,
-                   'ER(port)' : y4,
-                   'ER(long)' : y5})
-df['dd'] = drawdown(df['port']).values
+df = pd.DataFrame({'y1': y1, 'y2':y2 })
+df['dd'] = drawdown(df['y1']).values
 df['zeros']= np.zeros(len(df))
 df.reset_index(inplace=True)
-df.columns = ['x', 'port', 'bm', 'longOnly', 'ER(port)', 'ER(long)', 'dd', 'zeros']
+df.columns = ['x', 'y1', 'y2', 'dd', 'zeros']
+
 source = ColumnDataSource(df)
-
-p1 = figure(plot_width=1200, plot_height=400,
-           x_axis_type="datetime", x_axis_label='Date', y_axis_label='Relative Return')
-
-p1.title.text = "Adaptive Multi Factor Allocatioin using ESI Index (excluding Size factor)"
-p1.title.align = "center"
-p1.extra_y_ranges = {"foo": Range1d(start=y3.min(), end = y3.max())}
-p1.add_layout(LinearAxis(y_range_name = "foo", axis_label = 'Excess Return'), 'right')
-
-p1.line('x', 'port', source = source, legend="Portfolio", color = 'red', line_width=2)
-p1.line('x', 'bm', source = source, legend="KOSPI200", color = 'grey', line_width=2)
-p1.varea('x', y1='zeros', y2='ER(port)', source = source, legend="Excess Return", color = 'green', alpha =0.2, y_range_name="foo")
+p1 = figure(plot_width=1200, plot_height=400, title="simple line example",
+           x_axis_type="datetime", x_axis_label='Date', y_axis_label='Price')
+p1.line('x', 'y1', source = source, legend="Portfolio", color = 'red', line_width=2)
+p1.line('x', 'y2', source = source, legend="KOSPI200", color = 'grey', line_width=2)
 p1.legend.location = "top_left"
 p1.legend.click_policy="hide"
-p1.add_tools(HoverTool(tooltips=[('Date','@x{%Y-%m-%d}'), ('Port','@port'), ('BM', '@bm')], 
+p1.add_tools(HoverTool(tooltips=[('Date','@x{%Y-%m-%d}'), ('Port','@y1'), ('BM', '@y2')], 
                                  formatters={'x' : 'datetime'}, 
                                  mode = 'vline',
                                  show_arrow=False, point_policy='follow_mouse'))
 
 
 p2 = figure(plot_width=1200, plot_height=200, x_range = p1.x_range, x_axis_type="datetime")
-p2.varea(x='x', y1 = 'zeros', y2 = 'dd', source = source, legend="Drawdown")
-p2.legend.location = "bottom_left"
+p2.varea(x='x', y1 = 'zeros', y2 = 'dd', source = source)
 
 date_slider = DateRangeSlider(title="Date Range: ", 
-                              start=result.index[0],
-                              end=result.index[-1], 
-                              value=(result.index[0], result.index[-1]), 
+                              start=ts.index[0],
+                              end=ts.index[-1], 
+                              value=(ts.index[0], ts.index[-1]), 
                               step=1)
-
 
 def update_data(attrname, old, new):
     # Get the current slider values
@@ -169,42 +135,18 @@ def update_data(attrname, old, new):
     #print(x_end)
     # Generate new data
     new_df = df[(df['x']>= x_start) & (df['x'] <= x_end)]
-    
-    new_df.loc[:,'port'] = (new_df['port'].pct_change().fillna(0) + 1).cumprod() * 100
-    new_df.loc[:,'bm'] = (new_df['bm'].pct_change().fillna(0) + 1).cumprod() * 100   
-    new_df.loc[:,'longOnly'] = (new_df['longOnly'].pct_change().fillna(0) + 1).cumprod() * 100  
-    new_df.loc[:,'ER(port)'] = new_df['port'] - new_df['bm']
-    new_df.loc[:,'ER(long)'] = new_df['port'] - new_df['longOnly']
-    new_df.loc[:,'dd'] = drawdown(new_df['port'].values).values 
+    new_df.loc[:,'y1'] = (new_df['y1'].pct_change().fillna(0) + 1).cumprod() * 100
+    new_df.loc[:,'y2'] = (new_df['y2'].pct_change().fillna(0) + 1).cumprod() * 100   
+    new_df.loc[:,'dd'] = drawdown(new_df['y1'].values).values 
     new_df = new_df.reset_index().iloc[:,1:]
     newdata = ColumnDataSource(new_df)    
     source.data = newdata.data
-
+   
 date_slider.on_change('value', update_data)
+
+
 plots = column(p1, p2, date_slider)
 panel_1 = Panel(child = plots, title='Panel 1')
 tabs = Tabs(tabs = [panel_1, panel_2])
 curdoc().add_root(tabs)
 curdoc().title = "DateRangeSlider Example"
-
-
-
-#
-#hover = p1.select(dict(type=HoverTool))
-#hover.tooltips= [("Date", "$x"),
-#                ("Portfolio : ", "$y1"),
-#                ("KOSPI200 : ", "$y2"), 
-#                ("Excess Return : ", "$y3"),
-#                ("Portfolio (Long Only) : ", "$y4"),
-#                ("Excess Return (Long Only) : ", "$y5")]
-#hover.mode = 'mouse' 
-##    formatters = {
-##                 "Date" : 'datetime',
-##                 'y1' : 'printf',
-##                 'y2' : 'printf',
-##                 'y3' : 'printf',
-##                 'y4' : 'printf',
-##                 'y5' : 'printf',
-##                 },
-#show(p1)
-
