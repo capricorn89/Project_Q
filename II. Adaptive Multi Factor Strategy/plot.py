@@ -134,6 +134,7 @@ p1 = figure(plot_width=1200, plot_height=400,
 
 p1.title.text = "Adaptive Multi Factor Allocatioin using ESI Index (excluding Size factor)"
 p1.title.align = "center"
+
 p1.extra_y_ranges = {"foo": Range1d(start=y3.min(), end = y3.max())}
 p1.add_layout(LinearAxis(y_range_name = "foo", axis_label = 'Excess Return'), 'right')
 
