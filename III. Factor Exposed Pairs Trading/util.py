@@ -34,10 +34,10 @@ def get_stock_price(stockCodes, date_start, date_end):
     sql += (" AND GICODE IN (\'" + joined + "\')")
     cursor.execute(sql)
     data = cursor.fetchall()
-#    data = pd.DataFrame(list(data))
-#    data = data.pivot(index = 1, columns = 0, values = 2)
-#    data.index = pd.to_datetime(data.index.values)
-#    db.close()   
+    data = pd.DataFrame(list(data))
+    data = data.pivot(index = 1, columns = 0, values = 2)
+    data.index = pd.to_datetime(data.index.values)
+    db.close()   
     return data
 
 

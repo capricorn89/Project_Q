@@ -142,7 +142,7 @@ def find_factor_exSize(regime):
 
 start_year, start_month = 2005, 12
 start_day = calendar.monthrange(start_year, start_month)[1]
-end_year, end_month = 2019, 4
+end_year, end_month = 2019, 6
 end_day = calendar.monthrange(end_year, end_month)[1]
 
 start_invest = pd.datetime(start_year, start_month, start_day)
@@ -237,8 +237,7 @@ for i in tqdm(range(len(rebal_sche))):
     if method == 'integrated': # 하나의 데이터로 묶음
         port = pd.concat([value_spot, size_spot, mom_spot, yield_spot, inverseVol_spot, quality_spot ], axis= 1, sort=False)
         port.columns = ['value', 'size', 'momentum', 'yield', 'lowvol', 'quality']        
-        # 국면에 해당하는 팩터만 선택
-        port_regime = port[factor_names]
+        port_regime = port[factor_names] # 국면에 해당하는 팩터만 선택
         port_score = util.get_multifactor_score(port_regime)
         port = pd.qcut(port_score, num_group, labels =False)
         port_long  = util.to_portfolio(port[port  == num_group - 1].index.values, date_spot)  # Long : Highest 20% having total z-score

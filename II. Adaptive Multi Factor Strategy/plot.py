@@ -85,10 +85,10 @@ p3.legend.location = "top_left"
 panel_2 = Panel(child = p3, title = 'Panel 2')
 
 ##########################
-# 결과 그림
+# 백테스트 결과 
 ##########################
 os.chdir(path + '/Results')
-result = pd.read_excel('res_201972.xlsx')
+result = pd.read_excel('res_201973.xlsx')
 
 def drawdown(Series):    
     dd_Series = []
@@ -114,19 +114,19 @@ def drawdown(Series):
 
 y1 = (result['longShort_return'].fillna(0)+1).cumprod() * 100
 y2 = (result['I.101_return'].fillna(0) + 1).cumprod() * 100
-y4 = (result['long'].pct_change().fillna(0) + 1).cumprod() * 100
-y3 = y1 - y2
+y3 = (result['long'].pct_change().fillna(0) + 1).cumprod() * 100
+y4 = y1 - y2
 y5 = y4 - y2
 
 df = pd.DataFrame({'port' : y1,
                    'bm' : y2,
                    'longOnly' : y3,
-                   'ER(port)' : y4,
-                   'ER(long)' : y5})
+                   'ER_port' : y4,
+                   'ER_long' : y5})
 df['dd'] = drawdown(df['port']).values
 df['zeros']= np.zeros(len(df))
 df.reset_index(inplace=True)
-df.columns = ['x', 'port', 'bm', 'longOnly', 'ER(port)', 'ER(long)', 'dd', 'zeros']
+df.columns = ['x', 'port', 'bm', 'longOnly', 'ER_port', 'ER_long', 'dd', 'zeros']
 source = ColumnDataSource(df)
 
 p1 = figure(plot_width=1200, plot_height=400,
@@ -135,15 +135,17 @@ p1 = figure(plot_width=1200, plot_height=400,
 p1.title.text = "Adaptive Multi Factor Allocatioin using ESI Index (excluding Size factor)"
 p1.title.align = "center"
 
-p1.extra_y_ranges = {"foo": Range1d(start=y3.min(), end = y3.max())}
+p1.extra_y_ranges = {"foo": Range1d(start=y4.min(), end = y4.max())}
 p1.add_layout(LinearAxis(y_range_name = "foo", axis_label = 'Excess Return'), 'right')
 
 p1.line('x', 'port', source = source, legend="Portfolio", color = 'red', line_width=2)
 p1.line('x', 'bm', source = source, legend="KOSPI200", color = 'grey', line_width=2)
-p1.varea('x', y1='zeros', y2='ER(port)', source = source, legend="Excess Return", color = 'green', alpha =0.2, y_range_name="foo")
+
+p1.varea('x', y1='zeros', y2='ER_port', source = source, legend="Excess Return", color = 'green', alpha =0.2, y_range_name="foo")
+
 p1.legend.location = "top_left"
-p1.legend.click_policy="hide"
-p1.add_tools(HoverTool(tooltips=[('Date','@x{%Y-%m-%d}'), ('Port','@port'), ('BM', '@bm')], 
+p1.legend.click_policy="mute"
+p1.add_tools(HoverTool(tooltips=[('Date','@x{%Y-%m-%d}'), ('Port','@port'), ('BM', '@bm'), ('Excess', '@ER_port')], 
                                  formatters={'x' : 'datetime'}, 
                                  mode = 'vline',
                                  show_arrow=False, point_policy='follow_mouse'))
@@ -174,8 +176,8 @@ def update_data(attrname, old, new):
     new_df.loc[:,'port'] = (new_df['port'].pct_change().fillna(0) + 1).cumprod() * 100
     new_df.loc[:,'bm'] = (new_df['bm'].pct_change().fillna(0) + 1).cumprod() * 100   
     new_df.loc[:,'longOnly'] = (new_df['longOnly'].pct_change().fillna(0) + 1).cumprod() * 100  
-    new_df.loc[:,'ER(port)'] = new_df['port'] - new_df['bm']
-    new_df.loc[:,'ER(long)'] = new_df['port'] - new_df['longOnly']
+    new_df.loc[:,'ER_port'] = new_df['port'] - new_df['bm']
+    new_df.loc[:,'ER_long'] = new_df['port'] - new_df['longOnly']
     new_df.loc[:,'dd'] = drawdown(new_df['port'].values).values 
     new_df = new_df.reset_index().iloc[:,1:]
     newdata = ColumnDataSource(new_df)    
@@ -187,25 +189,3 @@ panel_1 = Panel(child = plots, title='Panel 1')
 tabs = Tabs(tabs = [panel_1, panel_2])
 curdoc().add_root(tabs)
 curdoc().title = "DateRangeSlider Example"
-
-
-
-#
-#hover = p1.select(dict(type=HoverTool))
-#hover.tooltips= [("Date", "$x"),
-#                ("Portfolio : ", "$y1"),
-#                ("KOSPI200 : ", "$y2"), 
-#                ("Excess Return : ", "$y3"),
-#                ("Portfolio (Long Only) : ", "$y4"),
-#                ("Excess Return (Long Only) : ", "$y5")]
-#hover.mode = 'mouse' 
-##    formatters = {
-##                 "Date" : 'datetime',
-##                 'y1' : 'printf',
-##                 'y2' : 'printf',
-##                 'y3' : 'printf',
-##                 'y4' : 'printf',
-##                 'y5' : 'printf',
-##                 },
-#show(p1)
-

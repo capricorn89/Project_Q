@@ -189,7 +189,7 @@ def getFinancialData(factorData, rebalDate, dataPeriod='Q'):
     
         종목 선정 시점     |   가용데이터 인덱스  (T)        |   가용데이터 인덱스 (T-1)
     ---------------------------------------------------------------------------------
-            3월말          |        12말(전년)              |       9말
+            3월말          |         9말(전년)              |       6말
             4월말          |        12말(전년)              |       9말
             5월말          |        12말(전년)              |       9말
             6월말          |         3말(당해)              |       12말
@@ -203,7 +203,7 @@ def getFinancialData(factorData, rebalDate, dataPeriod='Q'):
             2월말          |         9말(전년)              |       6말
     '''
 
-    if (rebalDate.month >=3) & (rebalDate.month <= 5):
+    if (rebalDate.month >=4) & (rebalDate.month <= 5):
         t_year = rebalDate.year - 1
         t_month = 12
         
@@ -219,7 +219,7 @@ def getFinancialData(factorData, rebalDate, dataPeriod='Q'):
         t_year = rebalDate.year
         t_month = 9    
 
-    elif (rebalDate.month >= 1) & (rebalDate.month <= 2):
+    elif (rebalDate.month >= 1) & (rebalDate.month <= 3):
         t_year = rebalDate.year - 1
         t_month = 9    
 
