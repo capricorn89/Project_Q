@@ -18,7 +18,7 @@ from datetime import datetime
 from bokeh.io import curdoc
 import statsmodels.api as sm
 
-os.chdir('C:/Woojin/###. Git/Project_Q/X. Visualization')
+os.chdir('D:/Woojin/GitHub/Project_Q/X. Visualization')
 #os.chdir('/Users/Woojin/Documents/GitHub/Project_Q/X. Visualization')         
 
 macroData = pd.read_excel('test_timeseries.xlsx', sheet_name = 'macro').set_index('Date')[['OECD_CLI','ESI']]
@@ -68,9 +68,8 @@ p3.add_tools(HoverTool(
 p3.legend.location = "top_left"
 panel_2 = Panel(child = p3, title = 'Economic Sentiment Indicator')
 
-
 # create a new plot with a title and axis labels
-ts = pd.read_excel('test_timeseries.xlsx', sheet_name = 'Sheet1')
+ts = pd.read_excel('test_timeseries.xlsx', sheet_name = 'Sheet1', index_col = 0)
 
 def drawdown(Series):    
     dd_Series = []
@@ -165,7 +164,7 @@ except ImportError:
         return dec
     
 from math import pi
-price = pd.read_excel('test_timeseries.xlsx', sheet_name = 'price')
+price = pd.read_excel('test_timeseries.xlsx', sheet_name = 'price', index_col = 0)
 ret = price.pct_change()
 corr = ret.corr()
 corr = corr.where(np.triu(np.ones(corr.shape)).astype(np.bool))
