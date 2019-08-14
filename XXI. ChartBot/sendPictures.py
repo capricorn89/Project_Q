@@ -2,7 +2,7 @@ from telegram.ext import Updater, CommandHandler
 import requests
 import re
 
-api_key = '969501539:AAE9y0VBLFVF-O2DGXwPNcIUMiirE17lBgg'
+
 contents = requests.get('https://random.dog/woof.json').json()
 image_url = contents['url']
 
