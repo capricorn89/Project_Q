@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Aug 28 15:25:52 2019
+
+@author: Woojin
+"""
+
+
 from telegram.ext import Updater, CommandHandler
 import requests
 import re
