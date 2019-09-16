@@ -9,7 +9,7 @@ Created on Wed Aug 28 15:25:52 2019
 from telegram.ext import Updater, CommandHandler
 import requests
 import re
-import urllib2
+from urllib.request import urlopen
 
 api_key = '969501539:AAE9y0VBLFVF-O2DGXwPNcIUMiirE17lBgg'
 contents = requests.get('https://random.dog/woof.json').json()
@@ -20,22 +20,29 @@ def get_url():
     url = contents['url']
     return url
 
-#def bop(bot, update):
-#    
-#    url = get_url()
-#    chat_id = update.message.chat_id
-#    bot.send_photo(chat_id=chat_id, photo=url)
-
+# 여러 사진 하나씩
 def bop(bot, update):
     urls = [get_url() for i in range(5)]
     for url in urls:
-        ret = urllib2.urlopen(url)
+        ret = urlopen(url)
         if ret.code == 200:
             chat_id = update.message.chat_id
-            bot.send_media_group(chat_id=chat_id, photo=url)
+            bot.sendPhoto(chat_id=chat_id, photo=url)
 
+# 여러 사진 하나씩
+def bops(bot, update):
+    urls = [get_url() for i in range(2)]
+    chat_id = update.message.chat_id
+    print(urls[0])
+    print(urls[1])
+    bot.sendMediaGroup(chat_id = chat_id, 
+                       media = [{'type' : 'photo', 'media' : urls[0]}, {'type' : 'photo', 'media' : urls[1]}])
+    print(urls[0])
+    print(urls[1])
+    
 updater = Updater(api_key)
 dp = updater.dispatcher
+dp.add_handler(CommandHandler('bops',bops))
 dp.add_handler(CommandHandler('bop',bop))
 
 updater.start_polling()
