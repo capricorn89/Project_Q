@@ -386,30 +386,47 @@ def drawdown_etf(Series):
     dd_Series = pd.Series(dd_Series)    
     return dd_Series
 
+etf_ts_slider = DateRangeSlider(title="Date Range: ", 
+                                start=etf.index[0],
+                                end=etf.index[-1], 
+                                value=(etf.index[0], etf.index[-1]), 
+                                step=1)
+
 def get_etf_data(etfName):
-    df1 = etf.loc[:,etfName]
-    df2 = etf.loc[:,SP500]
-    data = pd.concat([df1, df2], axis=1).dropna(axis=0)
+    
+
+    x_start = pd.to_datetime(datetime.fromtimestamp(etf_ts_slider.value[0]/1000))
+    x_end = pd.to_datetime(datetime.fromtimestamp(etf_ts_slider.value[1]/1000))
+    print(etf_ts_slider.value[0], etf_ts_slider.value[1])
+    print(x_start, x_end)
+    
+    data = etf.loc[x_start:x_end , [etfName, SP500]].dropna(axis=0)
     data = (data.pct_change().fillna(0) + 1).cumprod() * 100
     data = data.reset_index()
     data.columns = ['x','y1','y2']
     data['dd'] = drawdown_etf(data['y1']).values
     data['zeros']= np.zeros(len(data))
+    print(data)
     return data
+
 
 def update_etf(selected=None):
     t1 = etf_ticker.value
     data = get_etf_data(t1)
     source_etf.data = source_etf.from_df(data[['x', 'y1', 'y2', 'dd', 'zeros']])
+    print(source_etf.data)
 
 def etf_change(attrname, old, new):
     update_etf()
-
+    
+    
 etf_ticker.on_change('value', etf_change)
+etf_ts_slider.on_change('value', etf_change)
 
-update_etf()
+#etf_ts_slider.on_change('value', update_ts_etf)
 
-pan4 = column(etf_ticker, p5, p6)
+
+pan4 = column(etf_ticker, p5, p6, etf_ts_slider)
 panel_4 = Panel(child = pan4, title=sheets[3])
 
 tabs = Tabs(tabs = [panel_1, panel_2, panel_3, panel_4])
