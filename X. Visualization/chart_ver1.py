@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Wed Sep 18 08:15:57 2019
+
+@author: USER
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Jul  2 09:46:07 2019
 
 @author: Woojin Ji
@@ -22,66 +29,19 @@ import statsmodels.api as sm
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.chdir(path)
 excelFile = pd.ExcelFile('test_timeseries.xlsx')
-
-
-##############################################################################
-# Macro Cycle Plot (OECD CLI)
-##############################################################################
-
-macroData = pd.read_excel(excelFile, sheet_name = 'macro').set_index('Date')[['OECD_CLI','ESI']]
-numIndicator = len(macroData.columns)
-
-for i in range(numIndicator):
-    colName_3 = macroData.columns[i] + '_3MA'
-    colName_12 = macroData.columns[i] + '_12MA'
-    colName_ind = macroData.columns[i] + '_indic'   
-    macroData[colName_3] = macroData[macroData.columns[i]].rolling(3).mean() # 과거 3개월 평균
-    macroData[colName_12] = macroData[macroData.columns[i]].rolling(12).mean()  # 과거 12개월 평균
-    macroData[colName_ind] = np.nan
-    macroData[colName_ind] = (macroData[colName_ind]).astype(str)  # 빈 칼럼에 String을 집어넣으면 에러 발생해서 임시 방편으로..    
-    for j in range(len(macroData)-1):  # 처음 데이터는 비교 대상 없으므로 제외
-        
-        dindex = macroData.index[j+1]
-        
-        if (macroData[colName_3][j+1] < macroData[colName_12][j+1]) and (macroData[colName_3][j+1] >= macroData[colName_3][j]):
-            macroData.loc[dindex, colName_ind] = str('Recovery')  # Recovery
-            
-        elif (macroData[colName_3][j+1] >= macroData[colName_12][j+1]) and (macroData[colName_3][j+1] >= macroData[colName_3][j]):
-            macroData.loc[dindex, colName_ind]  = str('Expansion')  # Expansion
-    
-        elif (macroData[colName_3][j+1] >= macroData[colName_12][j+1]) and (macroData[colName_3][j+1] < macroData[colName_3][j]):
-            macroData.loc[dindex, colName_ind]  = str('Slowdown')  # Slowdown
-
-        elif (macroData[colName_3][j+1] < macroData[colName_12][j+1]) and (macroData[colName_3][j+1] < macroData[colName_3][j]):
-            macroData.loc[dindex, colName_ind]  = str('Contraction')  # Contraction
-            
-        else:
-            continue
-
-regimes = ['Recovery','Expansion','Slowdown','Contraction']
-
-source = ColumnDataSource(data = dict(date= macroData.index[12:],
-                                      value= list(macroData['ESI'].values[12:]),
-                                      regime = list(macroData['ESI_indic'].values[12:])))
-p3 = figure(plot_width=1600, plot_height=600, title="Macro Regime Indicator (ESI)",
-           x_axis_type="datetime", x_axis_label='Date', y_axis_label='Level')        
-p3.scatter("date", "value", source = source, legend = "regime",                    
-           color = factor_cmap("regime" ,palette=Spectral10, factors= regimes))      
-p3.add_tools(HoverTool(
-                tooltips=[('Date','@date{%F}'),('Level','@value{%0.1f}'), ('Regime', '@regime')],
-                formatters = {'date':'datetime', 'value' :'printf'},
-                mode = 'vline',
-                show_arrow=False, point_policy='follow_mouse'))  
-p3.legend.location = "top_left"
-panel_2 = Panel(child = p3, title = 'Economic Sentiment Indicator')
-
+sheets = excelFile.sheet_names
 
 ##############################################################################
-# Backtest Results Plot 
+# Backtest Results Plot - 1번 시트
+
+'''
+수정사항 (To-be)
+- Sheet 별 칼럼 이름 표준화 (첫번쨰는 결과 , 두번째는 BM 이런식으로)
+'''
 ##############################################################################
 
 # create a new plot with a title and axis labels
-ts = pd.read_excel(excelFile, sheet_name = 'Sheet1', index_col = 0)
+ts = pd.read_excel(excelFile, sheet_name = sheets[0], index_col = 0)
 
 def drawdown(Series):    
     dd_Series = []
@@ -157,26 +117,85 @@ def update_data(attrname, old, new):
    
 date_slider.on_change('value', update_data)
 plots = column(p1, p2, date_slider)
-panel_1 = Panel(child = plots, title='Portfolio Performance')
+panel_1 = Panel(child = plots, title = sheets[0])
 
 
-# 히트맵 그림 그리기
 
-try:
-    from functools import lru_cache
-except ImportError:
-    # Python 2 does stdlib does not have lru_cache so let's just
-    # create a dummy decorator to avoid crashing
-    print ("WARNING: Cache for this example is available on Python 3 only.")
-    def lru_cache():
-        def dec(f):
-            def _(*args, **kws):
-                return f(*args, **kws)
-            return _
-        return dec
+##############################################################################
+# Macro Cycle Plot (OECD CLI) - 2번 시트
+##############################################################################
+
+macroData = pd.read_excel(excelFile, sheet_name = sheets[1]).set_index('Date')[['OECD_CLI','ESI']]
+numIndicator = len(macroData.columns)
+
+for i in range(numIndicator):
+    colName_3 = macroData.columns[i] + '_3MA'
+    colName_12 = macroData.columns[i] + '_12MA'
+    colName_ind = macroData.columns[i] + '_indic'   
+    macroData[colName_3] = macroData[macroData.columns[i]].rolling(3).mean() # 과거 3개월 평균
+    macroData[colName_12] = macroData[macroData.columns[i]].rolling(12).mean()  # 과거 12개월 평균
+    macroData[colName_ind] = np.nan
+    macroData[colName_ind] = (macroData[colName_ind]).astype(str)  # 빈 칼럼에 String을 집어넣으면 에러 발생해서 임시 방편으로..    
+    for j in range(len(macroData)-1):  # 처음 데이터는 비교 대상 없으므로 제외
+        
+        dindex = macroData.index[j+1]
+        
+        if (macroData[colName_3][j+1] < macroData[colName_12][j+1]) and (macroData[colName_3][j+1] >= macroData[colName_3][j]):
+            macroData.loc[dindex, colName_ind] = str('Recovery')  # Recovery
+            
+        elif (macroData[colName_3][j+1] >= macroData[colName_12][j+1]) and (macroData[colName_3][j+1] >= macroData[colName_3][j]):
+            macroData.loc[dindex, colName_ind]  = str('Expansion')  # Expansion
     
-from math import pi
-price = pd.read_excel('test_timeseries.xlsx', sheet_name = 'price', index_col = 0)
+        elif (macroData[colName_3][j+1] >= macroData[colName_12][j+1]) and (macroData[colName_3][j+1] < macroData[colName_3][j]):
+            macroData.loc[dindex, colName_ind]  = str('Slowdown')  # Slowdown
+
+        elif (macroData[colName_3][j+1] < macroData[colName_12][j+1]) and (macroData[colName_3][j+1] < macroData[colName_3][j]):
+            macroData.loc[dindex, colName_ind]  = str('Contraction')  # Contraction
+            
+        else:
+            continue
+
+regimes = ['Recovery','Expansion','Slowdown','Contraction']
+
+source_scatter = ColumnDataSource(data = dict(date= macroData.index[12:],
+                                      value= list(macroData['ESI'].values[12:]),
+                                      regime = list(macroData['ESI_indic'].values[12:])))
+
+p3 = figure(plot_width=1600, plot_height=600, title="Macro Regime Indicator (ESI)",
+           x_axis_type="datetime", x_axis_label='Date', y_axis_label='Level')    
+    
+p3.scatter("date", "value", source = source_scatter, legend = "regime",                    
+           color = factor_cmap("regime" ,palette=Spectral10, factors= regimes))      
+
+p3.add_tools(HoverTool(
+                tooltips=[('Date','@date{%F}'),('Level','@value{%0.1f}'), ('Regime', '@regime')],
+                formatters = {'date':'datetime', 'value' :'printf'},
+                mode = 'vline',
+                show_arrow=False, point_policy='follow_mouse'))  
+
+p3.legend.location = "top_left"
+
+panel_2 = Panel(child = p3, title = sheets[1])
+
+
+##############################################################################
+# Heatmap - 3번 시트
+##############################################################################
+#
+#try:
+#    from functools import lru_cache
+#except ImportError:
+#    # Python 2 does stdlib does not have lru_cache so let's just
+#    # create a dummy decorator to avoid crashing
+#    print ("WARNING: Cache for this example is available on Python 3 only.")
+#    def lru_cache():
+#        def dec(f):
+#            def _(*args, **kws):
+#                return f(*args, **kws)
+#            return _
+#        return dec
+    
+price = pd.read_excel(excelFile, sheet_name = sheets[2], index_col = 0)
 ret = price.pct_change()
 corr = ret.corr()
 corr = corr.where(np.triu(np.ones(corr.shape)).astype(np.bool))
@@ -233,7 +252,6 @@ def update_heatmap(attrname, old, new):
     newdata = ColumnDataSource(new_df)    
     heat_source.data = newdata.data
 
-
 def nix(val, lst):
     return [x for x in lst if x != val]
 
@@ -241,6 +259,7 @@ DEFAULT_TICKERS = price.columns.values
 stats = PreText(text='', width=500)
 ticker1 = Select(value=DEFAULT_TICKERS[0], options=nix(DEFAULT_TICKERS[1], DEFAULT_TICKERS))
 ticker2 = Select(value=DEFAULT_TICKERS[1], options=nix(DEFAULT_TICKERS[0], DEFAULT_TICKERS))
+
 source_static = ColumnDataSource(data=dict(date=[], t1=[], t2=[]))
 tools = 'pan,wheel_zoom,xbox_select,reset'
 
@@ -291,15 +310,12 @@ def update_ts(attrname, old, new):
     new_price = new_price.reset_index()
     new_price.columns = ['date','t1','t2']   
     newPriceData = ColumnDataSource(new_price)    
-    source_static.data = newPriceData.data
-
-    
+    source_static.data = newPriceData.data 
     
 ticker1.on_change('value', ticker1_change)
 ticker2.on_change('value', ticker2_change)
 
 # set up layout
-
 heat_slider = DateRangeSlider(title="Date Range: ", 
                               start=ret.index[0],
                               end=ret.index[-1], 
@@ -308,13 +324,94 @@ heat_slider = DateRangeSlider(title="Date Range: ",
 
 heat_slider.on_change('value', update_heatmap)
 heat_slider.on_change('value', update_ts)
-
 heatmap = column(ticker1, ticker2, heat_slider, p4, ts1, ts2)
-panel_3 = Panel(child = heatmap, title='Macro at a Glance')
-tabs = Tabs(tabs = [panel_1, panel_2, panel_3])
-
-# initialize
 update()
+panel_3 = Panel(child = heatmap, title=sheets[2])
 
+##############################################################################
+# US ETF - 4번 시트
+
+'''
+시계열 밴드 조절하는 툴 추가 필요
+hoverTool 추가
+흐려지는 효과도?
+
+'''
+
+##############################################################################
+etfData = pd.read_excel(excelFile, sheet_name = sheets[3])
+
+etf = etfData.iloc[7:, 1:]
+etf.index = etfData.iloc[7:,0].values
+etf.columns = etfData.iloc[2, 1:]
+
+Names = list(etf.columns[1:].values)
+SP500 = etf.columns[0]
+
+etf_ticker = Select(value=Names[0], options=Names)
+source_etf = ColumnDataSource(data=dict(x=[], y1=[], y2=[], dd=[], zeros=[]))
+
+p5 = figure(plot_width=1200, plot_height=400, title="ETF vs. S&P500",
+            x_axis_type="datetime", x_axis_label='Date', y_axis_label='Price')
+
+etf1 = p5.line('x', 'y1', source = source_etf, legend='ETF', color = 'blue', alpha = 0.8,
+               muted_color = 'blue', muted_alpha = 0.2, line_width=2)
+
+etf2 = p5.line('x', 'y2', source = source_etf, legend='S&P500', color = 'grey',alpha = 0.8,
+               muted_color = 'grey', muted_alpha = 0.2, line_width=2)
+
+p6 = figure(plot_width=1200, plot_height=200, x_range = p5.x_range, x_axis_type="datetime")
+p6.varea(x='x', y1 = 'zeros', y2 = 'dd', source = source_etf)
+
+# create a new plot with a title and axis labels
+def drawdown_etf(Series):    
+    dd_Series = []
+    prev_high = 0
+    for i in range(len(Series)):
+        if i == 0:
+            prev_high = 0
+            dd = 0
+            dd_Series.append(dd)
+        else:
+            prev_high = max(Series[:i])            
+            if prev_high > Series[i]:                
+                dd = Series[i] - prev_high
+                #print(dd)
+            else:
+                prev_high = Series[i]
+                dd = 0                
+            #print(prev_high)
+
+            dd_Series.append(dd)
+    dd_Series = pd.Series(dd_Series)    
+    return dd_Series
+
+def get_etf_data(etfName):
+    df1 = etf.loc[:,etfName]
+    df2 = etf.loc[:,SP500]
+    data = pd.concat([df1, df2], axis=1).dropna(axis=0)
+    data = (data.pct_change().fillna(0) + 1).cumprod() * 100
+    data = data.reset_index()
+    data.columns = ['x','y1','y2']
+    data['dd'] = drawdown_etf(data['y1']).values
+    data['zeros']= np.zeros(len(data))
+    return data
+
+def update_etf(selected=None):
+    t1 = etf_ticker.value
+    data = get_etf_data(t1)
+    source_etf.data = source_etf.from_df(data[['x', 'y1', 'y2', 'dd', 'zeros']])
+
+def etf_change(attrname, old, new):
+    update_etf()
+
+etf_ticker.on_change('value', etf_change)
+
+update_etf()
+
+pan4 = column(etf_ticker, p5, p6)
+panel_4 = Panel(child = pan4, title=sheets[3])
+
+tabs = Tabs(tabs = [panel_1, panel_2, panel_3, panel_4])
 curdoc().add_root(tabs)
 curdoc().title = "Plot Master"
