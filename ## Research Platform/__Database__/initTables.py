@@ -24,7 +24,7 @@ oldData.drop_duplicates(inplace=True)
 oldData.reset_index(drop=True, inplace=True)
 oldData['date'] = [int(oldData.date[i].replace("-","")) for i in range(len(oldData))]
 
-conn = sqlite3.connect('DB_ver_1.1.db')  # Database 연결 (없는 경우 자동생성)
+conn = sqlite3.connect('DB_ver_1.2.db')  # Database 연결 (없는 경우 자동생성)
 c = conn.cursor()  # you can create a Cursor object and call its 
                    # execute() method to perform SQL commands
 oldData.to_sql('econ', conn, if_exists = 'replace')

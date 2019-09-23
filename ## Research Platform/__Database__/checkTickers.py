@@ -26,30 +26,35 @@ pw_ = input("PASSWORD : ")
 # 1) For econ table
 import DatastreamDSWS as DSWS
 ds = DSWS.Datastream(username = username_, password = pw_)
-df_list_2 = []
-na_ticker = []
-error_ticker = []
-for i in range(len(tickers)):
-    ticker = list(np.squeeze(tickers['ticker']))[i]
-    flds = list(np.squeeze(tickers['field']))[i]
-    try:
-        df =ds.get_data(ticker, fields = ['X'], start="-100D", end="-0D", freq="D")
-        if df.shape[1] == 3:
-            na_ticker.append(ticker)
-            pass
-        else:
-            df.columns = [ticker]
-            df_list_2.append(df)
-            print(ticker)
-    except:
-        error_ticker.append(ticker)
-        pass
 
-final_df = pd.concat(df_list_2,axis=1).stack().reset_index()
-final_df.columns = ['date', 'ticker', 'value']
-final_df.set_index('date', inplace=True)
-final_df = final_df.sort_values('date')
-final_df.to_excel('sample_DBformat.xlsx')
+def getDSWS(tickers):
+    df_list_2 = []
+    na_ticker = []
+    error_ticker = []
+    for i in range(len(tickers)):
+        ticker = list(np.squeeze(tickers['ticker']))[i]
+#        flds = list(np.squeeze(tickers['field']))[i]
+        try:
+            df =ds.get_data(ticker, fields = ['X'], start="-100D", end="-0D", freq="D")
+            if df.shape[1] == 3:
+                na_ticker.append(ticker)
+                pass
+            else:
+                df.columns = [ticker]
+                df_list_2.append(df)
+                print(ticker)
+        except:
+            error_ticker.append(ticker)
+            pass
+    
+    final_df = pd.concat(df_list_2,axis=1).stack().reset_index()
+    final_df.columns = ['date', 'ticker', 'value']
+    final_df.set_index('date', inplace=True)
+    final_df = final_df.sort_values('date')
+    return final_df
+
+df = getDSWS(tickers)
+df.to_excel('sample_DBformat.xlsx')
 
 
 # 2) For info table
