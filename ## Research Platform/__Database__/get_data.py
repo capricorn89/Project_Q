@@ -21,7 +21,7 @@ warnings.simplefilter("ignore", ArrowParseWarning)
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.chdir(path)
 
-class getData:
+class get_DSWS:
     
     def __init__(self, username, password):
         
@@ -33,7 +33,7 @@ class getData:
         df = self.ds.get_data(tickers = tk, fields = ['X'], start=day_start)
         if df.shape[1] == 3:
             print(tk, 'Not available')
-            pass
+            return 'Not Available'
         else:
             df.columns = [tk]
         
@@ -67,7 +67,7 @@ class getData:
             seoul_time = np.NaN  
         
         else:
-            pass
+            return 'Not Available'
     
         if ref_date_val != 'NA':
             ref_date_val = int(str(ref_date_val[:4])+str(ref_date_val[5:7])+ref_date_val[8:10])
@@ -85,23 +85,20 @@ class getData:
         return geo
     
     
-class fromDB:
+class get_DB:
     
     def __init__(self, DBName):
         
         self.DBName_ = DBName
-        self.conn = sqlite3.connect(self.DBName_)  # Database 연결 (없는 경우 자동생성)
-        self.c = self.conn.cursor()  # you can create a Cursor object and call its 
-                                     # execute() method to perform SQL commands
         
-    def econ(self, ticker, startDate, endDate):
+    def from_econ(self, ticker, startDate, endDate):
         
         '''
         ticker : econ 에 저장된 ticker
         startDate : int, "YYYYMMDD"
         endDate : int, "YYYYMMDD"
         '''
-        
+        conn = sqlite3.connect(self.DBName_)
         qry = "SELECT ticker, date, value FROM econ"
         qry += " WHERE ticker ="
         qry += " '" + ticker + "'"
@@ -109,27 +106,23 @@ class fromDB:
         qry += "'" + str(startDate) + "'"
         qry += " and date <= "
         qry += "'" + str(endDate) + "'"
-        df = pd.read_sql_query(qry, self.conn)
+        df = pd.read_sql_query(qry, conn)
         
         return df
     
     
-    def info(self, ticker):
+    def from_info(self, ticker):
         
         '''
         ticker : econ 에 저장된 ticker
-                '''
-        
+        '''
+        conn = sqlite3.connect(self.DBName_)
         qry = "SELECT * FROM info"
         qry += " WHERE ticker ="
         qry += " '" + ticker + "'"
-        df = pd.read_sql_query(qry, self.conn)
+        df = pd.read_sql_query(qry, conn)
         
         return df        
         
-    
-    
-        
-        
-        
+
     
