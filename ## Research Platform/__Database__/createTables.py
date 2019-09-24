@@ -13,7 +13,7 @@ import pandas as pd
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.chdir(path)
 
-conn = sqlite3.connect('DB_ver_1.1.db')  # Database 연결 (없는 경우 자동생성)
+conn = sqlite3.connect('DB_ver_1.3.db')  # Database 연결 (없는 경우 자동생성)
 c = conn.cursor()  # you can create a Cursor object and call its 
                    # execute() method to perform SQL commands
 
@@ -45,7 +45,7 @@ create_info = '''CREATE TABLE IF NOT EXISTS info(
                         name TEXT,
                         country TEXT,
                         NDOR_date INTEGER,
-                        NDOR_time INTEGER
+                        NDOR_time INTEGER,
                         NDOR_ref_date INTEGER)'''
 # ticker : PK, 티커
 # name : 종목명 / 지표명

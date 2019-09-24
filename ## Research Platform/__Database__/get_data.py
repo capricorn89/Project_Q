@@ -32,7 +32,7 @@ class get_DSWS:
     def econData(self, tk, day_start):       
         df = self.ds.get_data(tickers = tk, fields = ['X'], start=day_start)
         if df.shape[1] == 3:
-            print(tk, 'Not available')
+#            print(tk, 'Not available')
             return 'Not Available'
         else:
             df.columns = [tk]
