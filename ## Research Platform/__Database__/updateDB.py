@@ -17,14 +17,9 @@ import datetime
 ####################################
 # 현재 DB 접속 : Ticker들 가져오기
 ####################################
-DBName = 'DB_ver_1.2.db'
+DBName = 'DB_ver_1.3.db'
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.chdir(path)
-
-######################################
-# Datastream 연결 
-######################################
-
 
 ######################################
 # Info table에서 최근 일주일간 데이터 업데이트 예정이었던 티커 추출 
@@ -44,8 +39,6 @@ qry = "SELECT DISTINCT ticker FROM info"  # 한번 쓰면 삭제할것
 tickers = list(pd.read_sql_query(qry, conn)['ticker'].values)
 conn.close()
 
-
-DBName = 'DB_ver_1.3.db'
 ##################################
 # 기존 데이터의 업데이트 
 ##################################
@@ -66,28 +59,21 @@ def update_info(conn, task):
     cur.execute(sql, task)
     conn.commit()
 
-
-
-
-import get_data as dsws
+import DB_util as dsws
 
 username_ = input("USERNAME : ")
 pw_ = input("PASSWORD : ") 
-
 
 conn = sqlite3.connect(DBName)  # Database 연결 (없는 경우 생성까지)
 cur = conn.cursor()
 
 ds = dsws.get_DSWS(username = username_, password = pw_)
-#day_start = pd.datetime.strftime(pd.datetime.today() - datetime.timedelta(90), "%Y-%m-%d")
-
-day_start = pd.datetime.strftime(pd.datetime(2010,1,1), "%Y-%m-%d")
+day_start = pd.datetime.strftime(pd.datetime.today() - datetime.timedelta(90), "%Y-%m-%d")
 for i in tqdm(range(len(tickers))):
     
     dsData = ds.econData(tickers[i], day_start = day_start)   # 지표
     if type(dsData) == str:
         if dsData == 'Not Available':
-#            print(tickers[i], 'Not available')
             pass
     else:
         dsData = dsData.reset_index()
@@ -111,8 +97,7 @@ for i in tqdm(range(len(tickers))):
                 qry_2 += " AND ticker = '" + str(tickers[i]) + "'"
                 
                 cur.execute(qry)
-                cur.execute(qry_2)
-                
+                cur.execute(qry_2)                
                 conn.commit()
             
         else:
@@ -120,7 +105,6 @@ for i in tqdm(range(len(tickers))):
         
     dsMeta = ds.NDOR(tickers[i])  # 메타 정보 -> 걍 모든 티커를 다 하는게 나은지는 고민 필요
     if dsMeta == 'Not Available':
-#        print(tickers[i], 'Not available')
         pass
     
     else:
@@ -131,32 +115,12 @@ for i in tqdm(range(len(tickers))):
         with conn:
             update_info(conn, dsMeta)
         pass
-
-#
-#        qry = "INSERT OR IGNORE INTO econ (date, ticker, value) VALUES "
-#        qry += "(" + str(dt) + ", " + str(tkr) + ", " + str(vl) + ")"
-#
-#        qry_2 = "UPDATE econ SET value = " + str(vl)
-#        qry_2+= " WHERE date = " + str(dt) + " AND ticker = " + str(tkr)        
-#        
-
      
 conn.close()
-        
-        
-#final_df = pd.concat(newData,axis=1).stack().reset_index()
-#final_df.columns = ['date', 'ticker', 'value']
-#final_df.set_index('date', inplace=True)
-#final_df = final_df.sort_values('date')
-#final_df.index = [int(final_df.index[i].replace("-","")) for i in range(len(final_df))]
-#
-#conn = sqlite3.connect(DBName)
-#final_df.to_sql('econ', conn, if_exists = 'replace')
 
-#
-conn = sqlite3.connect(DBName)
-sampleData = pd.read_sql_query("select * from econ ", conn)  # test용 쿼리
-#
-    
-    
+
+## For test
+#conn = sqlite3.connect(DBName)
+#sampleData = pd.read_sql_query("select * from econ ", conn) 
+##
 

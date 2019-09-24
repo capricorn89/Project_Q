@@ -32,9 +32,11 @@ import stat_util as su
 os.chdir(path)
 
 
+DBName = 'DB_ver_1.3.db'
+
 def pairData(ticker_1, ticker_2):
     os.chdir(path + '/__Database__/')
-    conn = sqlite3.connect('DB_ver_1.1.db')
+    conn = sqlite3.connect(DBName)
     qry = "SELECT date, ticker, value FROM econ "
     qry += "WHERE ticker = '"
     qry += ticker_1
@@ -47,3 +49,7 @@ def pairData(ticker_1, ticker_2):
     return df
 
 df = pairData('USFEFRH', 'USNPNIN.R')
+
+
+conn = sqlite3.connect(DBName)
+tt = pd.read_sql_query("SELECT ticker, name FROM info WHERE name LIKE '%Leading%'", conn)
