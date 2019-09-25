@@ -29,23 +29,28 @@ path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 os.chdir(path + '/__statPairs__')
 import stat_util as su
+os.chdir(path + '/__Database__')
+import DB_util as db
+
+
 os.chdir(path)
 
-
 DBName = 'DB_ver_1.3.db'
+dbData = db.get_DB(DBName)
 
-def pairData(ticker_1, ticker_2):
-    os.chdir(path + '/__Database__/')
-    conn = sqlite3.connect(DBName)
-    qry = "SELECT date, ticker, value FROM econ "
-    qry += "WHERE ticker = '"
-    qry += ticker_1
-    qry += "' OR ticker = '"
-    qry += ticker_2 + "'"
-    df = pd.read_sql_query(qry, conn)
-    df['date'] = [pd.datetime.strptime(str(df['date'][i]), '%Y%m%d') for i in range(len(df))]
-    df = df.pivot(index='date', columns = 'ticker', values = 'value')
-    conn.close()
+def pairData(ticker_1, ticker_2, period='all', *periods):
+    
+    if period == 'all':
+        today = pd.datetime.strftime(pd.datetime.today(),"%Y%m%d")
+        dbData.from_econ(ticker, )
+        pass
+    
+    else:
+        
+        pass
+    
+    
+    
     return df
 
 df = pairData('USFEFRH', 'USNPNIN.R')
