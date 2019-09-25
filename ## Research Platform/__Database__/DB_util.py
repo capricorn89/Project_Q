@@ -100,13 +100,15 @@ class get_DB:
         '''
         conn = sqlite3.connect(self.DBName_)
         qry = "SELECT ticker, date, value FROM econ"
-        qry += " WHERE ticker ="
-        qry += " '" + ticker + "'"
-        qry += " and date >= "
+        qry += " WHERE ticker in " + str(tuple(ticker))
+        qry += " AND (date BETWEEN "
         qry += "'" + str(startDate) + "'"
-        qry += " and date <= "
-        qry += "'" + str(endDate) + "'"
+        qry += " AND "
+        qry += "'" + str(endDate) + "')"
         df = pd.read_sql_query(qry, conn)
+        
+        df['date'] = [pd.datetime.strptime(str(df['date'][i]), "%Y%m%d") for i in range(len(df))]
+        df = df.pivot(index = 'date', columns = 'ticker', values = 'value')
         
         return df
     

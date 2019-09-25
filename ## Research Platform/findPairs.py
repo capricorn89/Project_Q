@@ -28,33 +28,26 @@ path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 '''
 
 os.chdir(path + '/__statPairs__')
-import stat_util as su
+import stat_util as util
 os.chdir(path + '/__Database__')
 import DB_util as db
 
-
-os.chdir(path)
-
 DBName = 'DB_ver_1.3.db'
 dbData = db.get_DB(DBName)
+#os.chdir(path)
 
-def pairData(ticker_1, ticker_2, period='all', *periods):
+def pairData(tickers, period='all', *periods):
     
     if period == 'all':
         today = pd.datetime.strftime(pd.datetime.today(),"%Y%m%d")
-        dbData.from_econ(ticker, )
-        pass
+        df = dbData.from_econ(tickers, '00000000', today)
     
-    else:
-        
-        pass
-    
-    
+    elif period == 'specific':    
+        start_ = periods[0]
+        end_ = periods[1]
+        df = dbData.from_econ(tickers, start_, end_)
     
     return df
 
-df = pairData('USFEFRH', 'USNPNIN.R')
+df = pairData(['USFEFRH', 'USNPNIN.R'],'specific', '20110101', '20150101' )
 
-
-conn = sqlite3.connect(DBName)
-tt = pd.read_sql_query("SELECT ticker, name FROM info WHERE name LIKE '%Leading%'", conn)
