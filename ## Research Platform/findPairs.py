@@ -17,8 +17,10 @@ import sqlite3
 
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-# 1) 시계열 데이터 업로드
 
+######################################################
+# 1) 시계열 데이터 업로드
+######################################################
 '''
 
 지금은 일단 전체 시계열로 페어를 만들고 찾지만, 
@@ -49,5 +51,12 @@ def pairData(tickers, period='all', *periods):
     
     return df
 
-df = pairData(['USFEFRH', 'USNPNIN.R'],'specific', '20110101', '20150101' )
+df = pairData(['USCNEXPT', 'USFEFRH'],'specific', '20110101', pd.datetime.strftime(pd.datetime.today(),"%Y%m%d")) 
+
+######################################################
+# 2) 페어 시계열 다듬기 (단위, 주기 맞추기, 표준화 등등)
+######################################################
+
+# 주기를 알고 있다고 가정
+df_M = df
 
