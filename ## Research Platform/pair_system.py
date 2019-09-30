@@ -88,19 +88,31 @@ def get_ssd(pairData):
 ticker_1 = []
 ticker_2 = []
 distance = []
+corr = []
+
+
 for i in tqdm(range(len(combs))):
     
     combi  = list(combs[i])
     df = pairData(combi, 'specific', yearAgo_3, today)  # 월간 데이터라는 가정하에
-    
+    df = df.dropna()
     if (len(df.columns) < 2) | (len(df) < 10):
         pass
     else:
         df = df.resample('M').last()
-        df = normalize_df(df)
+        
+        norm_df = normalize_df(df)
         ticker_1.append(df.columns[0])
         ticker_2.append(df.columns[1])
-        distance.append(get_ssd(df))
+        distance.append(get_ssd(norm_df))
+        corr.append(df.pct_change().corr().values[1,0])
 
 
+res = pd.DataFrame({'ticker_1':ticker_1, 'ticker_2':ticker_2, 'SSD' : distance,
+                    'correlation' : corr})
 
+#combi_test = ('USCONPRCE', 'USCYLEADQ')
+#df = pairData(combi_test, 'specific', yearAgo_3, today)
+#
+#test = ('AUWGEINFB', 'BRGPIM10F')
+#df = pairData(test, 'specific', yearAgo_3, today)
