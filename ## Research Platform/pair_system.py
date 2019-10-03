@@ -90,17 +90,21 @@ ticker_2 = []
 distance = []
 corr = []
 
-
 for i in tqdm(range(len(combs))):
     
     combi  = list(combs[i])
     df = pairData(combi, 'specific', yearAgo_3, today)  # 월간 데이터라는 가정하에
-    df = df.dropna()
-    if (len(df.columns) < 2) | (len(df) < 10):
+    
+    if (len(df.columns) < 2) | (len(df) < 20):
         pass
     else:
         df = df.resample('M').last()
+        df = df.dropna()
         
+        
+    if (len(df.columns) < 2) | (len(df) < 20):
+        pass
+    else:        
         norm_df = normalize_df(df)
         ticker_1.append(df.columns[0])
         ticker_2.append(df.columns[1])
