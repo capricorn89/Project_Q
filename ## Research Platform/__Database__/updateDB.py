@@ -24,7 +24,7 @@ os.chdir(path)
 ######################################
 # Info table에서 최근 일주일간 데이터 업데이트 예정이었던 티커 추출 
 ######################################
-day_update_from = pd.datetime.today() - datetime.timedelta(10)
+day_update_from = pd.datetime.today() - datetime.timedelta(60)
 day_update_to = pd.datetime.today() + datetime.timedelta(10)
 
 day_update_from = pd.datetime.strftime(day_update_from, "%Y%m%d")
