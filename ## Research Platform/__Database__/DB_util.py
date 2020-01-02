@@ -15,8 +15,8 @@ import DatastreamDSWS as DSWS
 import arrow
 import sqlite3
 import warnings
-from arrow.factory import ArrowParseWarning
-warnings.simplefilter("ignore", ArrowParseWarning)
+#from arrow.factory import *
+#warnings.simplefilter("ignore", ArrowParseWarning)
 
 path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.chdir(path)
